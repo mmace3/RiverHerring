@@ -338,7 +338,7 @@ for(i in unique(c(1:10)))
 
        z_rsp_model <- glmmTMB(n~RepeatSpawn + (1|AgeMaturity/RepeatSpawn),
                               family = poisson(link = "log"),
-                              data = data_temp_sub)
+                              data = data_temp)
 
        sum_z_rsp_model <- summary(z_rsp_model)
     }

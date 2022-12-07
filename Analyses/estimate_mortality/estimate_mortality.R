@@ -255,16 +255,26 @@ write.csv(estimates,
 # of age
 #-------------------------------------------------------------------------------
 
-#!!!! UNDER CONSTRUCTION - WILL CHANGE IN FUTURE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!! UNDER CONSTRUCTION - WILL CHANGE IN FUTURE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 aa <-
 data %>%
-  #filter(
-  pivot_longer(cols = c(AgeScale, AgeOtolith),
-               names_to = "AgeMethod",
-               values_to = "Age",
-               values_drop_na = TRUE) %>%
-  group_by(State, Year, Location, Species, AgeMethod, Age, RepeatSpawn) %>%
+  mutate(BothAge = if_else((!is.na(AgeScale) & !is.na(AgeOtolith)), "Both",
+                   if_else((!is.na(AgeScale) & is.na(AgeOtolith)), "Scale",
+                   if_else((is.na(AgeScale) & !is.na(AgeOtolith)), "Otolith",
+                   if_else((is.na(AgeScale) & is.na(AgeOtolith)), "Neither",
+         "something wrong"))))) %>%
+  filter(BothAge != "Neither") %>%
+  mutate(AgeMaturity = if_else(BothAge != "Otolith", AgeScale - RepeatSpawn,
+                               AgeOtolith - RepeatSpawn)) %>%
+  filter(AgeMaturity > 0) %>%
+  pivot_longer(
+      cols = c(AgeScale, AgeOtolith),
+      names_to = "AgeMethod",
+      values_to = "Age",
+      values_drop_na = TRUE
+    ) %>%
+  group_by(State, Year, Location, Species, AgeMethod, AgeMaturity, RepeatSpawn) %>%
   summarize(n = n()) %>%
   ungroup() %>%
   group_by(State, Year, Location, Species, AgeMethod) %>%
@@ -326,7 +336,7 @@ for(i in unique(c(1:10)))
 
 
 
-       z_rsp_model <- glmmTMB(n~RepeatSpawn + (1|Age) +(1|RepeatSpawn),
+       z_rsp_model <- glmmTMB(n~RepeatSpawn + (1|AgeMaturity/RepeatSpawn),
                               family = poisson(link = "log"),
                               data = data_temp_sub)
 

@@ -281,68 +281,77 @@ data %>%
   mutate(ID = cur_group_id()) %>%
   ungroup()
 
+estimates_b <- data.frame()
 
-for(i in unique(c(1:10)))
+for(i in unique(c(1:100)))
 {
 
   data_temp <- subset(aa, ID == i)
-  data_temp$"FullRecruitment" <- "PeakPlus"
+  #data_temp$"FullRecruitment" <- "PeakPlus"
 
-  peak_ages <- data_temp[which(data_temp$n == max(data_temp$n)),]$Age
+  #peak_ages <- data_temp[which(data_temp$n == max(data_temp$n)),]$Age
 
   # Check if there is a tie among ages that have the same number of fish
   # if there is a tie make peak_age = max(ages that are tied)
 
-  if(length(peak_ages) == 1)
-  {
-    peak_age <- peak_ages
+  # if(length(peak_ages) == 1)
+  # {
+  #   peak_age <- peak_ages
+  #
+  # } else
+  # {
+  #   peak_age <- max(peak_ages)
+  #
+  # }
 
-  } else
-  {
-    peak_age <- max(peak_ages)
 
-  }
-
-
-  peak_age_plus <- peak_age + 1
-
-  data_temp_sub <- subset(data_temp, Age >= peak_age_plus)
+  # peak_age_plus <- peak_age + 1
+  #
+  # data_temp_sub <- subset(data_temp, Age >= peak_age_plus)
 
   rows <- unique(subset(data_temp,
                         select = c("State", "Year", "Location", "Species", "AgeMethod")))
 
-  estimates_temp <- rbind(rows, rows, rows, rows)
-
-  estimates_temp$"Zmethod" <- c("z_glmm", "z_glm", "z_cr", "z_lm")
+  #estimates_temp <- rbind(rows, rows, rows, rows)
+  estimates_temp <- rows
+  # estimates_temp$"Zmethod" <- c("z_glmm", "z_glm", "z_cr", "z_lm")
+  estimates_temp$"Zmethod" <- c("z_glmm")
   estimates_temp$"Z" <- NA
   estimates_temp$"Zse" <- NA
 
-  if(nrow(data_temp_sub) < 3)
-  {
-    data_temp$"ConditionsMet" <- 0
-    data_temp$"Reason" <- "Nages"
+  # if(nrow(data_temp_sub) < 3)
+  # {
+  #   data_temp$"ConditionsMet" <- 0
+  #   data_temp$"Reason" <- "Nages"
+  #
+  # } else
+  #   if(sum(data_temp_sub$n) < 30)
+  #   {
+  #     data_temp$"ConditionsMet" <- 0
+  #     data_temp$"Reason" <- "Nfish"
+  #
+  #   } else
+  #   {
+  #     data_temp$"ConditionsMet" <- 1
+  #     data_temp$"Reason" <- NA
 
-  } else
-    if(sum(data_temp_sub$n) < 30)
-    {
-      data_temp$"ConditionsMet" <- 0
-      data_temp$"Reason" <- "Nfish"
 
-    } else
-    {
-      data_temp$"ConditionsMet" <- 1
-      data_temp$"Reason" <- NA
-
-
-
+      #data_temp <- subset(aa, ID == i)
 
        z_rsp_model <- glmmTMB(n~RepeatSpawn + (1|AgeMaturity/RepeatSpawn),
                               family = poisson(link = "log"),
                               data = data_temp)
 
        sum_z_rsp_model <- summary(z_rsp_model)
-    }
 
+       # Get estimates from model
+       Zest_var <- z_rsp_model[["sdr"]][["cov.fixed"]][2,2]
+       estimates_temp[which(estimates_temp$Zmethod == "z_glmm"),"Z"] <- -1*z_rsp_model$fit$par[[2]]
+       estimates_temp[which(estimates_temp$Zmethod == "z_glmm"),"Zse"] <- sqrt(Zest_var)
+    #}
+
+
+       estimates_b <- rbind(estimates_b, estimates_temp)
 }
 
 #-------------------------------------------------------------------------------

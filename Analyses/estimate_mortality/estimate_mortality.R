@@ -59,6 +59,22 @@ data <- read.csv("clean_data.csv",
 # estimates - mortality estimates for each state, year, location, age method,
 #             species combination for data that met criteria above
 
+#-------------------------------------------------------------------------------
+
+
+
+# flag to separate data by sex or not - 1 (yes) or not 1 (no)
+
+sep_by_sex <- 1
+
+if(sep_by_sex == 1)
+{
+  grouping_variables <- c("State", "Year", "Location", "Species", "Sex", "AgeMethod", "Age")
+} else
+  {
+    grouping_variables <- c("State", "Year", "Location", "Species", "AgeMethod", "Age")
+  }
+
 
 yy <-
 data %>%
@@ -66,7 +82,7 @@ data %>%
                names_to = "AgeMethod",
                values_to = "Age",
                values_drop_na = TRUE) %>%
-  group_by(State, Year, Location, Species, AgeMethod, Age) %>%
+  group_by(across(all_of(grouping_variables))) %>%
   summarize(n = n()) %>%
   mutate(ID = cur_group_id()) %>%
   ungroup()
@@ -78,6 +94,7 @@ estimates <- data.frame()
 index <- unique(yy$ID)
 
 for(i in index)
+#for(i in 1:10)
 {
   data_temp <- subset(yy, ID == i)
   data_temp$"FullRecruitment" <- "PeakPlus"
@@ -103,7 +120,7 @@ for(i in index)
   data_temp_sub <- subset(data_temp, Age >= peak_age_plus)
 
   rows <- unique(subset(data_temp,
-                             select = c("State", "Year", "Location", "Species", "AgeMethod")))
+                             select = c("State", "Year", "Location", "Species", "Sex", "AgeMethod")))
 
   estimates_temp <- rbind(rows, rows, rows, rows)
 
@@ -257,6 +274,15 @@ write.csv(estimates,
 
 # !!!! UNDER CONSTRUCTION - WILL CHANGE IN FUTURE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+if(sep_by_sex == 1)
+{
+  grouping_variables <- c("State", "Year", "Location", "Species", "Sex", "AgeMethod", "AgeMaturity", "RepeatSpawn")
+} else
+{
+  grouping_variables <- c("State", "Year", "Location", "Species", "AgeMethod", "AgeMaturity", "RepeatSpawn")
+}
+
+
 aa <-
 data %>%
   mutate(BothAge = if_else((!is.na(AgeScale) & !is.na(AgeOtolith)), "Both",
@@ -274,16 +300,20 @@ data %>%
       values_to = "Age",
       values_drop_na = TRUE
     ) %>%
-  group_by(State, Year, Location, Species, AgeMethod, AgeMaturity, RepeatSpawn) %>%
+  # group_by(State, Year, Location, Species, AgeMethod, AgeMaturity, RepeatSpawn) %>%
+  group_by(across(all_of(grouping_variables))) %>%
   summarize(n = n()) %>%
   ungroup() %>%
-  group_by(State, Year, Location, Species, AgeMethod) %>%
+  group_by(State, Year, Location, Species, Sex, AgeMethod) %>%
   mutate(ID = cur_group_id()) %>%
   ungroup()
 
 estimates_b <- data.frame()
 
-for(i in unique(c(1:100)))
+index <- unique(aa$ID)
+
+for(i in index)
+# for(i in unique(c(1:100)))
 {
 
   data_temp <- subset(aa, ID == i)
@@ -310,7 +340,7 @@ for(i in unique(c(1:100)))
   # data_temp_sub <- subset(data_temp, Age >= peak_age_plus)
 
   rows <- unique(subset(data_temp,
-                        select = c("State", "Year", "Location", "Species", "AgeMethod")))
+                        select = c("State", "Year", "Location", "Species", "Sex", "AgeMethod")))
 
   #estimates_temp <- rbind(rows, rows, rows, rows)
   estimates_temp <- rows
@@ -338,7 +368,7 @@ for(i in unique(c(1:100)))
 
       #data_temp <- subset(aa, ID == i)
 
-       z_rsp_model <- glmmTMB(n~RepeatSpawn + (1|AgeMaturity/RepeatSpawn),
+       z_rsp_model <- glmmTMB(n~RepeatSpawn + (1|AgeMaturity:RepeatSpawn),
                               family = poisson(link = "log"),
                               data = data_temp)
 
@@ -353,6 +383,17 @@ for(i in unique(c(1:100)))
 
        estimates_b <- rbind(estimates_b, estimates_temp)
 }
+
+estimates_B <-
+  estimates_b %>%
+  mutate(RandomEffect = 1)
+
+
+
+write.csv(estimates_B,
+          file = "Zestimates_b2.csv",
+          row.names = FALSE)
+
 
 #-------------------------------------------------------------------------------
 

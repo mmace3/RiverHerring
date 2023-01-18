@@ -26,17 +26,19 @@ library(tidyverse)
 data <- read.csv("Zestimates.csv",
                  header = TRUE) %>%
         mutate(State_Species = paste(State, Species, sep = "_")) %>%
-        mutate(State_Species_AgeMethod = paste(State, Species, AgeMethod, sep = "_"))
+        mutate(State_Species_AgeMethod_Sex = paste(State, Species, AgeMethod, Sex, sep = "_"))
 
 #-------------------------------------------------------------------------------
 
-States <- unique(data$State)
+# States <- unique(data$State)
+#
+# Species <- unique(data$Species)
+#
+# State_Species <- unique(data$State_Species)
+#
+# State_Species_AgeMethod <- unique(data$State_Species_AgeMethod)
 
-Species <- unique(data$Species)
-
-State_Species <- unique(data$State_Species)
-
-State_Species_AgeMethod <- unique(data$State_Species_AgeMethod)
+State_Species_AgeMethod_Sex <- unique(data$State_Species_AgeMethod_Sex)
 
 pdf("mortality_plots.pdf", width = 7, height = 7)
 
@@ -44,15 +46,15 @@ pdf("mortality_plots.pdf", width = 7, height = 7)
 # {
 #   for(j in Species)
 #   {
-for(i in State_Species_AgeMethod)
+for(i in State_Species_AgeMethod_Sex)
 {
 
 
 # sub_data <- subset(data, State == i & Species == j)
 
-  sub_data <- subset(data, State_Species_AgeMethod == i)
+  sub_data <- subset(data, State_Species_AgeMethod_Sex == i)
 
-  title_temp <- paste(sub_data$State, sub_data$Species, sub_data$AgeMethod, sep = " ")
+  title_temp <- paste(sub_data$State, sub_data$Species, sub_data$AgeMethod, sub_data$Sex, sep = " ")
 
 my_breaks <- c(min(sub_data$Year, na.rm = TRUE):max(sub_data$Year, na.rm = TRUE))
 
@@ -83,6 +85,20 @@ print(zplot)
 # }
 }
 dev.off()
+
+
+
+Zdiffs <-
+data %>%
+  group_by(Species, Sex, AgeMethod, Zmethod) %>%
+  summarize(Mean = mean(Z, na.rm = TRUE)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = Sex,
+              values_from = Mean) %>%
+  mutate(diff = male - female)
+
+
+
 
 
 

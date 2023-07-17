@@ -25,8 +25,26 @@ library(tidyverse)
 
 data <- read.csv("Zestimates.csv",
                  header = TRUE) %>%
+        filter(Zmethod %in% c("z_glm", "z_cr")) %>%
         mutate(State_Species = paste(State, Species, sep = "_")) %>%
         mutate(State_Species_AgeMethod_Sex = paste(State, Species, AgeMethod, Sex, sep = "_"))
+
+data_a <- read.csv("Zestimates_b1.csv",
+                   header = TRUE)
+
+data_b <- read.csv("Zestimates_b2.csv",
+                   header = TRUE)
+
+
+data_spawn <-
+  data_a %>%
+  bind_rows(data_b) %>%
+  #mutate(Z_new = if_else(Z < 0.00001 | !is.na(Zse), NA_real_, Z)) %>%
+  #mutate(Z_new = case_when(Z < 0.0001 ~  ))
+  filter(Z >= 0) %>%
+  filter(!is.na(Zse)) %>%
+  mutate(State_Species_AgeMethod_Sex = paste(State, Species, AgeMethod, Sex, sep = "_"))
+
 
 #-------------------------------------------------------------------------------
 
@@ -135,3 +153,122 @@ ggplot(sub_data, aes(x = Year, y = Z, group = Zmethod, fill = Zmethod)) +
                                 "Poisson GLMM", "Linear \n Regression")) +
   facet_wrap(~Location) +
   theme_bw()
+
+
+#-------------------------------------------------------------------------------
+
+
+
+data_spawn %>%
+
+  group_by(Species, Sex, AgeMethod, Zmethod, RandomEffect) %>%
+  summarize(Mean = mean(Z, na.rm = TRUE)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = c(RandomEffect),
+              values_from = Mean) %>%
+  mutate(diff = `1` - `2`)
+
+
+
+
+
+State_Species_AgeMethod_Sex <- unique(data_spawn$State_Species_AgeMethod_Sex)
+
+pdf("mortality_plots_b.pdf", width = 7, height = 7)
+
+# for(i in States)
+# {
+#   for(j in Species)
+#   {
+for(i in State_Species_AgeMethod_Sex)
+{
+
+
+  # sub_data <- subset(data, State == i & Species == j)
+
+  sub_data <- subset(data_spawn, State_Species_AgeMethod_Sex == i)
+
+  title_temp <- paste(sub_data$State, sub_data$Species, sub_data$AgeMethod, sub_data$Sex, sep = " ")
+
+  my_breaks <- c(min(sub_data$Year, na.rm = TRUE):max(sub_data$Year, na.rm = TRUE))
+
+  my_labels <- ifelse(my_breaks %% 5 == 0, my_breaks, "")
+
+
+  zplot <-
+    #ggplot(sub_data, aes(x = Year, y = Z, group = RandomEffect, fill = Zmethod)) +
+    ggplot(sub_data, aes(x = Year, y = Z, group = as.factor(RandomEffect))) +
+    geom_errorbar(aes(ymin=Z-Zse, ymax=Z+Zse), width=1,
+                  position=position_dodge(0.2)) +
+    geom_point(aes(shape = as.factor(RandomEffect), fill = as.factor(RandomEffect)), size = 3, position=position_dodge(0.2)) +
+    scale_shape_manual(values=c(21, 22)) +
+    #scale_fill_manual(values = rep("grey", times = 4)) +
+    coord_cartesian(ylim = c(0, 3)) +
+    # scale_x_discrete(breaks = as.factor(my_breaks),
+    #                  labels = my_labels) +
+    scale_x_continuous(breaks = my_breaks,
+                       labels = my_labels) +
+    labs(y = "Z (Instantaneous mortality rate)",
+         x = "",
+         title = title_temp) +
+    facet_wrap(~Location) +
+    theme_bw()
+
+  print(zplot)
+
+  #   }
+  # }
+}
+dev.off()
+
+
+#-------------------------------------------------------------------------------
+
+
+# compare estimates from age versus previous spawning
+
+hh <-
+data %>%
+  right_join(data_a, by = c("State", "Year", "Location", "Species", "Sex", "Zmethod")) %>%
+  filter(Z.y > 0.01) %>%
+  filter(!is.na(Z.x)) %>%
+  mutate(Zdiff = Z.y - Z.x) %>%
+  group_by(State, Location, Species, Sex) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+mean(hh$Zdiff)
+
+  group_by(State, Year, Location, Species, Sex) %>%
+  summarize(Z.y.Mean = mean(Z.y),
+            Z.x.Mean = mean(Z.x)) %>%
+  ungroup()
+
+
+
+
+

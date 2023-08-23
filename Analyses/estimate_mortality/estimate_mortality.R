@@ -13,6 +13,15 @@
 # The input data file clean_data.csv is created in the file
 # Analyses/clean_data/clean_data.R
 
+# The code is in two sections:
+#
+# A) Code used to estimate mortality based on the decisions of the SAS
+#
+# B) Extra code for estimating mortality using other methods considered by
+#    the SAS but not ultimately chosen.
+
+
+
 # Comments:
 
 # 14 July 2023
@@ -47,7 +56,7 @@ data <- read.csv("clean_data.csv",
         mutate(Date = as.POSIXct(Date, format="%Y-%m-%d")) %>%
         mutate(Year = as.integer(format(Date, format= "%Y")))
 
-# number of records with an age estimate (should be 243141)
+# number of records with an age estimate (should be 243041)
 data %>%
   filter(!is.na(AgeScale) | !is.na(AgeOtolith)) %>%
   summarize(n = n())
@@ -72,16 +81,16 @@ data %>%
 #-------------------------------------------------------------------------------
 
 
-# flag to separate data by sex or not - 1 (yes) or not 1 (no)
+# flag to separate data (estimates) by sex or not - 1 (yes) or not 1 (no)
 
 sep_by_sex <- 1
 
 if(sep_by_sex == 1)
 {
-  grouping_variables <- c("State", "Year", "Location", "Species", "Sex", "AgeMethod", "Age")
+  grouping_variables <- c("Region", "State", "Year", "Location", "Species", "Sex", "AgeMethod", "Age")
 } else
 {
-  grouping_variables <- c("State", "Year", "Location", "Species", "AgeMethod", "Age")
+  grouping_variables <- c("Region", "State", "Year", "Location", "Species", "AgeMethod", "Age")
 }
 
 #-------------------------------------------------------------------------------
@@ -89,8 +98,13 @@ if(sep_by_sex == 1)
 #
 # Out of potential methods, this is the method chosen by the SAS for getting
 # mortality estimates.
+#
+# First get mortality estimates by river and then by region
 #-------------------------------------------------------------------------------
 
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+# SECTION A
 
 # Total number of age records in below data will be a little bigger (802) b/c
 # some fish get counted twice if they have both age and otolith estimate
@@ -100,6 +114,7 @@ age_grouped <-
                names_to = "AgeMethod",
                values_to = "Age",
                values_drop_na = TRUE) %>%
+  filter(Age < 20) %>% # get rid of age 99
   group_by(across(all_of(grouping_variables))) %>%
   summarize(n_individuals = n()) %>%
   mutate(ID = cur_group_id()) %>%
@@ -107,9 +122,10 @@ age_grouped <-
 
 
 # subset data based on criteria of at least 3 ages present and 30 individuals
-# across those ages. Also we are now using age of full recruitment of 5 years
+# across those ages. Also we are now using age of full recruitment of 5 years.
+# Get mortality estimates
 
-grouping_variables_a <- c("State", "Year", "Location", "Species", "Sex", "AgeMethod")
+grouping_variables_a <- c("Region", "State", "Year", "Location", "Species", "Sex", "AgeMethod")
 
 z_pois_glm <-
   age_grouped %>%
@@ -123,6 +139,7 @@ z_pois_glm <-
   group_by(across(all_of(grouping_variables_a))) %>%
   group_modify(~ broom::tidy(glm(n_individuals ~ Age, family = "poisson", data = .x)))
 
+# Clean up format of estimates from above to format for output
 estimates_by_river <-
   z_pois_glm %>%
   mutate(Zmethod = "z_glm") %>%
@@ -130,13 +147,101 @@ estimates_by_river <-
   rename(Z = "estimate",
          Zse = "std.error") %>%
   mutate(Z = if_else(Z < 0, Z*(-1), -9999)) %>%
-  select(State, Year, Location, Species, Sex, AgeMethod, Zmethod, Z, Zse)
+  select(Region, State, Year, Location, Species, AgeMethod, Zmethod, Z, Zse)
 
 # write out estimates to .csv file
 
 write.csv(estimates_by_river,
           file = "Zestimates_by_River.csv",
           row.names = FALSE)
+
+
+
+
+# Get mortality estimates by region instead of by river
+
+if(sep_by_sex == 1)
+{
+  region_grouping_variables_a <- c("Region", "Year", "Species", "Sex", "AgeMethod", "Age")
+} else
+{
+  region_grouping_variables_a <- c("Region", "Year", "Species", "AgeMethod", "Age")
+}
+
+#region_grouping_variables_a <- c("Region", "Year", "Species", "Sex", "AgeMethod", "Age")
+
+age_grouped_region <-
+  data %>%
+  pivot_longer(cols = c(AgeScale, AgeOtolith),
+               names_to = "AgeMethod",
+               values_to = "Age",
+               values_drop_na = TRUE) %>%
+  group_by(across(all_of(region_grouping_variables_a))) %>%
+  summarize(n_individuals = n()) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup()
+
+
+if(sep_by_sex == 1)
+{
+  region_grouping_variables_b <- c("Region", "Year", "Species", "Sex", "AgeMethod")
+} else
+{
+  region_grouping_variables_b <- c("Region", "Year", "Species", "AgeMethod")
+}
+
+
+z_pois_glm_region <-
+  age_grouped_region %>%
+  filter(Age > 4) %>%
+  group_by(across(all_of(region_grouping_variables_b))) %>%
+  mutate(n_ages = n()) %>%
+  mutate(total_fish = sum(n_individuals)) %>%
+  ungroup() %>%
+  filter(n_ages > 2) %>%
+  filter(total_fish > 29) %>%
+  group_by(across(all_of(region_grouping_variables_b))) %>%
+  group_modify(~ broom::tidy(glm(n_individuals ~ Age, family = "poisson", data = .x)))
+
+estimates_by_region <-
+  z_pois_glm_region %>%
+  mutate(Zmethod = "z_glm") %>%
+  filter(term == "Age") %>%
+  rename(Z = "estimate",
+         Zse = "std.error") %>%
+  mutate(Z = if_else(Z < 0, Z*(-1), -9999)) %>%
+  #select(Region, Year, Species, Sex, AgeMethod, Zmethod, Z, Zse)
+  select(c(all_of(region_grouping_variables_b), Zmethod, Z, Zse))
+
+if(sep_by_sex == 1)
+{
+  file_name <- "Zestimates_by_Region_by_sex.csv"
+} else
+{
+  file_name <- "Zestimates_by_Region.csv"
+}
+
+write.csv(estimates_by_region,
+          file = file_name,
+          row.names = FALSE)
+
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+# SECTION B
+
+# Look at data for region estimates
+
+region_data_grouped <-
+  age_grouped_region %>%
+  filter(Age > 4) %>%
+  group_by(across(all_of(region_grouping_variables_b))) %>%
+  mutate(n_ages = n()) %>%
+  mutate(total_fish = sum(n_individuals)) %>%
+  ungroup() %>%
+  filter(n_ages > 2) %>%
+  filter(total_fish > 29) %>%
+  arrange(Region, Species, Sex, AgeMethod, Year)
 
 
 #-------------------------------------------------------------------------------
@@ -174,7 +279,7 @@ z_cr <-
 #-------------------------------------------------------------------------------
 # Code for getting age of full recruitment based on the number of individuals
 # in each age group. This method is probably the one used most often for deciding
-# the age of full recruitment to use.
+# the age of full recruitment to use, but is not the method chosen by the SAS
 
 # subset data based on criteria of at least 3 ages present and 30 individuals
 # across those ages. Age of recruitment varies depending on number of individuals

@@ -161,3 +161,32 @@ k_clean_data_new %>%
   filter(State == "MA" & Oto.Age == 0 & Species == "Alewife")
 
 #-------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------
+# Look at sample sizes for various combinations of data
+
+yy <-
+  my_clean_data %>%
+  filter(Region == "CAN-NNE") %>%
+  filter(AgeScale > 4 | AgeOtolith > 4) %>%
+  group_by(State, Year, Sex) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  filter(n > 29)
+
+
+my_clean_data %>%
+  filter(State == "MA")
+
+

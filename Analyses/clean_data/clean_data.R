@@ -1580,8 +1580,8 @@ AllStates <-
                             TRUE ~ State)) %>%
   mutate(Year = as.integer(format(Date, format= "%Y"))) %>%
   mutate(Location = if_else(State == "NC_WRC" & is.na(Location) & is.na(Region), "Neuse River", Location)) %>%
-  mutate(Region = if_else(State == "NC_WRC" & is.na(Region), "MAT", Region))
-
+  mutate(Region = if_else(State == "NC_WRC" & is.na(Region), "MAT", Region)) %>%
+  filter(AgeScale < 20 | is.na(AgeScale)) # get rid of 100 records with age of 99
 
 
 write.csv(AllStates,

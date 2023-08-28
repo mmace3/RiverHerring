@@ -83,7 +83,7 @@ data %>%
 
 # flag to separate data (estimates) by sex or not - 1 (yes) or not 1 (no)
 
-sep_by_sex <- 1
+sep_by_sex <- 0
 
 if(sep_by_sex == 1)
 {
@@ -92,19 +92,6 @@ if(sep_by_sex == 1)
 {
   grouping_variables <- c("Region", "State", "Year", "Location", "Species", "AgeMethod", "Age")
 }
-
-#-------------------------------------------------------------------------------
-# Estimate mortality using the poisson glm method and with criteria given above
-#
-# Out of potential methods, this is the method chosen by the SAS for getting
-# mortality estimates.
-#
-# First get mortality estimates by river and then by region
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-# SECTION A
 
 # Total number of age records in below data will be a little bigger (802) b/c
 # some fish get counted twice if they have both age and otolith estimate
@@ -120,39 +107,68 @@ age_grouped <-
   mutate(ID = cur_group_id()) %>%
   ungroup()
 
+#-------------------------------------------------------------------------------
+# Estimate mortality using the poisson glm method and with criteria given above
+#
+# Out of potential methods, this is the method chosen by the SAS for getting
+# mortality estimates.
+#
+# First get mortality estimates by river and then by region
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+# SECTION A
+
+
+
 
 # subset data based on criteria of at least 3 ages present and 30 individuals
 # across those ages. Also we are now using age of full recruitment of 5 years.
 # Get mortality estimates
 
-grouping_variables_a <- c("Region", "State", "Year", "Location", "Species", "Sex", "AgeMethod")
+if(sep_by_sex == 1)
+{
+  river_grouping_variables_a <- c("Region", "State", "Year", "Location", "Species", "Sex", "AgeMethod")
+} else
+  {
+    river_grouping_variables_a <- c("Region", "State", "Year", "Location", "Species", "AgeMethod")
+  }
 
-z_pois_glm <-
+age_grouped_river_data <-
   age_grouped %>%
   filter(Age > 4) %>%
-  group_by(across(all_of(grouping_variables_a))) %>%
+  group_by(across(all_of(river_grouping_variables_a))) %>%
   mutate(n_ages = n()) %>%
   mutate(total_fish = sum(n_individuals)) %>%
   ungroup() %>%
   filter(n_ages > 2) %>%
-  filter(total_fish > 29) %>%
-  group_by(across(all_of(grouping_variables_a))) %>%
-  group_modify(~ broom::tidy(glm(n_individuals ~ Age, family = "poisson", data = .x)))
+  filter(total_fish > 29)
 
 # Clean up format of estimates from above to format for output
 estimates_by_river <-
-  z_pois_glm %>%
+  age_grouped_river_data %>%
+  group_by(across(all_of(river_grouping_variables_a))) %>%
+  group_modify(~ broom::tidy(glm(n_individuals ~ Age, family = "poisson", data = .x))) %>%
   mutate(Zmethod = "z_glm") %>%
   filter(term == "Age") %>%
   rename(Z = "estimate",
          Zse = "std.error") %>%
   mutate(Z = if_else(Z < 0, Z*(-1), -9999)) %>%
-  select(Region, State, Year, Location, Species, AgeMethod, Zmethod, Z, Zse)
+  select(c(all_of(river_grouping_variables_a), Zmethod, Z, Zse))
 
 # write out estimates to .csv file
 
+if(sep_by_sex == 1)
+{
+  file_name_river <- "Zestimates_by_River_by_sex.csv"
+} else
+{
+  file_name_river <- "Zestimates_by_River.csv"
+}
+
 write.csv(estimates_by_river,
-          file = "Zestimates_by_River.csv",
+          file = file_name_river,
           row.names = FALSE)
 
 
@@ -168,7 +184,6 @@ if(sep_by_sex == 1)
   region_grouping_variables_a <- c("Region", "Year", "Species", "AgeMethod", "Age")
 }
 
-#region_grouping_variables_a <- c("Region", "Year", "Species", "Sex", "AgeMethod", "Age")
 
 age_grouped_region <-
   data %>%
@@ -191,7 +206,7 @@ if(sep_by_sex == 1)
 }
 
 
-z_pois_glm_region <-
+age_grouped_region_data <-
   age_grouped_region %>%
   filter(Age > 4) %>%
   group_by(across(all_of(region_grouping_variables_b))) %>%
@@ -199,12 +214,12 @@ z_pois_glm_region <-
   mutate(total_fish = sum(n_individuals)) %>%
   ungroup() %>%
   filter(n_ages > 2) %>%
-  filter(total_fish > 29) %>%
-  group_by(across(all_of(region_grouping_variables_b))) %>%
-  group_modify(~ broom::tidy(glm(n_individuals ~ Age, family = "poisson", data = .x)))
+  filter(total_fish > 29)
 
 estimates_by_region <-
-  z_pois_glm_region %>%
+  age_grouped_region_data %>%
+  group_by(across(all_of(region_grouping_variables_b))) %>%
+  group_modify(~ broom::tidy(glm(n_individuals ~ Age, family = "poisson", data = .x))) %>%
   mutate(Zmethod = "z_glm") %>%
   filter(term == "Age") %>%
   rename(Z = "estimate",
@@ -215,14 +230,14 @@ estimates_by_region <-
 
 if(sep_by_sex == 1)
 {
-  file_name <- "Zestimates_by_Region_by_sex.csv"
+  file_name_region <- "Zestimates_by_Region_by_sex.csv"
 } else
 {
-  file_name <- "Zestimates_by_Region.csv"
+  file_name_region <- "Zestimates_by_Region.csv"
 }
 
 write.csv(estimates_by_region,
-          file = file_name,
+          file = file_name_region,
           row.names = FALSE)
 
 
@@ -303,143 +318,4 @@ peak_plus <-
   mutate(ranks = rank(n_individuals, ties.method = "first")) %>%
   mutate(PeakAge = Age[which(ranks == max(ranks))]) %>%
   filter(Age > PeakAge)
-
-
-
-
-
-#-------------------------------------------------------------------------------
-# Analyses using number of previous spawns as independent variable instead
-# of age
-#-------------------------------------------------------------------------------
-
-# !!!! UNDER CONSTRUCTION - WILL CHANGE IN FUTURE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-if(sep_by_sex == 1)
-{
-  grouping_variables <- c("State", "Year", "Location", "Species", "Sex", "AgeMethod", "AgeMaturity", "RepeatSpawn")
-} else
-{
-  grouping_variables <- c("State", "Year", "Location", "Species", "AgeMethod", "AgeMaturity", "RepeatSpawn")
-}
-
-
-aa <-
-data %>%
-  mutate(BothAge = if_else((!is.na(AgeScale) & !is.na(AgeOtolith)), "Both",
-                   if_else((!is.na(AgeScale) & is.na(AgeOtolith)), "Scale",
-                   if_else((is.na(AgeScale) & !is.na(AgeOtolith)), "Otolith",
-                   if_else((is.na(AgeScale) & is.na(AgeOtolith)), "Neither",
-         "something wrong"))))) %>%
-  filter(BothAge != "Neither") %>%
-  mutate(AgeMaturity = if_else(BothAge != "Otolith", AgeScale - RepeatSpawn,
-                               AgeOtolith - RepeatSpawn)) %>%
-  filter(AgeMaturity > 0) %>%
-  pivot_longer(
-      cols = c(AgeScale, AgeOtolith),
-      names_to = "AgeMethod",
-      values_to = "Age",
-      values_drop_na = TRUE
-    ) %>%
-  # group_by(State, Year, Location, Species, AgeMethod, AgeMaturity, RepeatSpawn) %>%
-  group_by(across(all_of(grouping_variables))) %>%
-  summarize(n = n()) %>%
-  ungroup() %>%
-  group_by(State, Year, Location, Species, Sex, AgeMethod) %>%
-  mutate(ID = cur_group_id()) %>%
-  ungroup()
-
-estimates_b <- data.frame()
-
-index <- unique(aa$ID)
-
-for(i in index)
-# for(i in unique(c(1:100)))
-{
-
-  data_temp <- subset(aa, ID == i)
-  #data_temp$"FullRecruitment" <- "PeakPlus"
-
-  #peak_ages <- data_temp[which(data_temp$n == max(data_temp$n)),]$Age
-
-  # Check if there is a tie among ages that have the same number of fish
-  # if there is a tie make peak_age = max(ages that are tied)
-
-  # if(length(peak_ages) == 1)
-  # {
-  #   peak_age <- peak_ages
-  #
-  # } else
-  # {
-  #   peak_age <- max(peak_ages)
-  #
-  # }
-
-
-  # peak_age_plus <- peak_age + 1
-  #
-  # data_temp_sub <- subset(data_temp, Age >= peak_age_plus)
-
-  rows <- unique(subset(data_temp,
-                        select = c("State", "Year", "Location", "Species", "Sex", "AgeMethod")))
-
-  #estimates_temp <- rbind(rows, rows, rows, rows)
-  estimates_temp <- rows
-  # estimates_temp$"Zmethod" <- c("z_glmm", "z_glm", "z_cr", "z_lm")
-  estimates_temp$"Zmethod" <- c("z_glmm")
-  estimates_temp$"Z" <- NA
-  estimates_temp$"Zse" <- NA
-
-  # if(nrow(data_temp_sub) < 3)
-  # {
-  #   data_temp$"ConditionsMet" <- 0
-  #   data_temp$"Reason" <- "Nages"
-  #
-  # } else
-  #   if(sum(data_temp_sub$n) < 30)
-  #   {
-  #     data_temp$"ConditionsMet" <- 0
-  #     data_temp$"Reason" <- "Nfish"
-  #
-  #   } else
-  #   {
-  #     data_temp$"ConditionsMet" <- 1
-  #     data_temp$"Reason" <- NA
-
-
-      #data_temp <- subset(aa, ID == i)
-
-       z_rsp_model <- glmmTMB(n~RepeatSpawn + (1|AgeMaturity:RepeatSpawn),
-                              family = poisson(link = "log"),
-                              data = data_temp)
-
-       sum_z_rsp_model <- summary(z_rsp_model)
-
-       # Get estimates from model
-       Zest_var <- z_rsp_model[["sdr"]][["cov.fixed"]][2,2]
-       estimates_temp[which(estimates_temp$Zmethod == "z_glmm"),"Z"] <- -1*z_rsp_model$fit$par[[2]]
-       estimates_temp[which(estimates_temp$Zmethod == "z_glmm"),"Zse"] <- sqrt(Zest_var)
-    #}
-
-
-       estimates_b <- rbind(estimates_b, estimates_temp)
-}
-
-estimates_B <-
-  estimates_b %>%
-  mutate(RandomEffect = 1)
-
-
-
-write.csv(estimates_B,
-          file = "Zestimates_b2.csv",
-          row.names = FALSE)
-
-
-#-------------------------------------------------------------------------------
-
-
-
-
-
 

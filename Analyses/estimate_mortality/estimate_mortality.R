@@ -40,6 +40,10 @@
 #      estimates from some of the other methods still available if questions come
 #      up later about estimates from those methods.
 
+#   e) I am not recoding the age values for the poisson glm method so that the
+#      first age is zero because this won't affect the slope estimate from these
+#      models. The intercept will change though.
+
 #-------------------------------------------------------------------------------
 # Load Packages, set options
 #-------------------------------------------------------------------------------

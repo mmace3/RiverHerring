@@ -25,34 +25,27 @@ library(readxl)
 #-------------------------------------------------------------------------------
 
 
+# region estimates with sexes combined
 
-region_data_a <- read.csv("Zestimates_by_Region_by_sex.csv",
-                 header = TRUE) %>%
-        filter(Zmethod %in% c("z_glm")) %>%
-        #mutate(State_Species = paste(State, Species, sep = "_")) %>%
-        mutate(Region_Species_AgeMethod_Sex = paste(Region, Species, AgeMethod, Sex, sep = "_")) %>%
-        mutate(Region_Species_AgeMethod = paste(Region, Species, AgeMethod, sep = "_")) #%>%
-        #filter(Z >= 0) %>%
-        #filter(Sex != "unknown")
-
-region_data_year_blank <-
-  region_data_a %>%
-  expand(Region_Species_AgeMethod_Sex, Year) %>%
-  mutate(Region_Species_AgeMethod = paste(str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,1],
-                                          str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,2],
-                                          str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,3],
-                                          sep ="_")) %>%
-  mutate(Sex = str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,4]) %>%
-  mutate(Species = str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,2]) %>%
-  mutate(AgeMethod = str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,3]) %>%
-  mutate(Region = str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,1])
+region_data_raw <- read.csv("Zestimates_by_Region.csv",
+                 header = TRUE)
 
 region_data <-
-  region_data_a %>%
-  full_join(region_data_year_blank, by = c("Year", "Region_Species_AgeMethod_Sex",
-                                           "Sex", "Species", "AgeMethod",
-                                           "Region_Species_AgeMethod", "Region")) %>%
-  filter(Sex != "unknown")
+  region_data_raw %>%
+  mutate(Yearf = as.factor(Year)) %>%
+  group_by(Region, Species, AgeMethod) %>%
+  expand(Yearf) %>%
+  ungroup() %>%
+  mutate(Year = as.integer(as.character(Yearf))) %>%
+  select(-Yearf) %>%
+  #arrange(Region, Year, Species, AgeMethod)
+  full_join(region_data_raw, by = c("Region", "Species", "AgeMethod",
+                                           "Year")) %>%
+  arrange(Region, Species, AgeMethod, Year) %>%
+  group_by(Region, Species, AgeMethod) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup()
+
 
 
 region_data_a <- read.csv("Zestimates_by_Region.csv",
@@ -263,11 +256,9 @@ dev.off()
 
 # Region data sexes combined
 
-Region_Species_AgeMethod <- unique(region_data$Region_Species_AgeMethod)
-
 Max_total_years <-
   region_data %>%
-  group_by(Region_Species_AgeMethod) %>%
+  group_by(ID) %>%
   mutate(TotalYears = max(Year) - min(Year)) %>%
   ungroup() %>%
   filter(TotalYears == max(TotalYears))
@@ -276,10 +267,10 @@ my_breaks <- c(min(Max_total_years$Year, na.rm = TRUE):max(Max_total_years$Year,
 
 pdf("region_mortality_plots.pdf", width = 7, height = 6)
 
-for(i in Region_Species_AgeMethod)
+for(i in unique(region_data$ID))
 {
 
-  sub_data <- subset(region_data, Region_Species_AgeMethod == i)
+  sub_data <- subset(region_data, ID == i)
 
   sub_species <- unique(sub_data$Species)
   sub_region <- unique(sub_data$Region)
@@ -305,6 +296,11 @@ for(i in Region_Species_AgeMethod)
     theme_bw()
 
   print(zplot)
+
+  zplot_smoother <- zplot + geom_smooth()
+
+  plot(zplot_smoother)
+
 
 }
 dev.off()
@@ -596,33 +592,6 @@ data %>%
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-mean(hh$Zdiff)
-
-  group_by(State, Year, Location, Species, Sex) %>%
-  summarize(Z.y.Mean = mean(Z.y),
-            Z.x.Mean = mean(Z.x)) %>%
-  ungroup()
 
 
 

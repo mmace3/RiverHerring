@@ -39,13 +39,88 @@ library(readxl)
 # Data sets from Katie Drew
 
 # Alewife data
-ALE <- read.csv("data/ALE_biodata_10-28-22.csv",
+ALE <- read.csv("data/ALE_biodata_09-11-23.csv",
                 header = TRUE)
 
 # Blue back herring data
-BBH <- read.csv("data/BBh_biodata_10-28-22.csv",
+BBH <- read.csv("data/BBh_biodata_09-11-23.csv",
                 header = TRUE)
 
+# Updated NY from Wes (in same format as files above from Katie Drew)
+
+updated_NY_BBH <- read_excel("data/Updated_NY_BBH_biodata_09_07_23.xlsx",
+                             sheet = "Sheet1",
+                             skip = 0,
+                             na = c("", "NA"),
+                             col_types = c("numeric", # Year
+                                           "text", # Region
+                                           "text", # State
+                                           "text", # River
+                                           "text", # Sex
+                                           "numeric", # Fork.Length
+                                           "numeric", # Total.Length
+                                           "numeric", # weight
+                                           "numeric", # Scale.Age
+                                           "numeric", # Oto.Age
+                                           "numeric", # RPS
+                                           "text", # maturity
+                                           "text" # data source
+                                           )
+                            ) %>%
+                  mutate(Species = "Blueback") %>%
+                  mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
+                                           format="%Y-%m-%d")) %>%
+                  select(State,
+                         Date,
+                         Location = River,
+                         Species,
+                         AgeScale = Scale.Age,
+                         AgeOtolith = Oto.Age,
+                         ForkLength = Fork.Length,
+                         TotalLength = Total.Length,
+                         Weight,
+                         Sex,
+                         RepeatSpawn = RPS)
+
+
+updated_NY_ALE <- read_excel("data/Updated_NY_ALE_biodata_09_07_23.xlsx",
+                             sheet = "Sheet1",
+                             skip = 0,
+                             na = c("", "NA"),
+                             col_types = c("numeric", # Year
+                                           "text", # Region
+                                           "text", # State
+                                           "text", # River
+                                           "text", # Sex
+                                           "numeric", # Fork.Length
+                                           "numeric", # Total.Length
+                                           "numeric", # weight
+                                           "numeric", # Scale.Age
+                                           "numeric", # Oto.Age
+                                           "numeric", # RPS
+                                           "text", # maturity
+                                           "text" # data source
+                                          )
+                            ) %>%
+                  mutate(Species = "Alewife") %>%
+                  mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
+                                           format="%Y-%m-%d")) %>%
+                  select(State,
+                         Date,
+                         Location = River,
+                         Species,
+                         AgeScale = Scale.Age,
+                         AgeOtolith = Oto.Age,
+                         ForkLength = Fork.Length,
+                         TotalLength = Total.Length,
+                         Weight,
+                         Sex,
+                         RepeatSpawn = RPS) # %>%
+                  # filter(!is.na(AgeScale) | !is.na(AgeOtolith))
+
+NY_new <-
+  updated_NY_BBH %>%
+  bind_rows(updated_NY_ALE)
 
 
 #-------------------------------------------------------------------------------
@@ -601,6 +676,64 @@ ME <-
          Sex,
          RepeatSpawn = rps)
 
+#--------------------------------------------------------------------------
+# 6 October 2023 - Will use Maine data from datasets provided by Katie Drew.
+#                  They have the river locations in the data set instead of
+#                  all combined together like the data I created above.
+#--------------------------------------------------------------------------
+
+# State
+# Date
+# River/Location
+# Species
+# AgeScale
+# AgeOtolith
+# ForkLength
+# TotalLength
+# Weight
+# Sex
+# RepeatSpawn
+
+new_ME_BBH <-
+  BBH %>%
+  filter(State == "ME") %>%
+  mutate(Species = "Blueback") %>%
+  mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
+                           format="%Y-%m-%d")) %>%
+  select(State,
+         Date,
+         Location = River,
+         Species,
+         AgeScale = Scale.Age,
+         AgeOtolith = Oto.Age,
+         ForkLength = Fork.Length,
+         TotalLength = Total.Length,
+         Weight,
+         Sex,
+         RepeatSpawn = RPS)
+
+
+new_ME_ALE <-
+  ALE %>%
+  filter(State == "ME") %>%
+  mutate(Species = "Alewife") %>%
+  mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
+                           format="%Y-%m-%d")) %>%
+  select(State,
+         Date,
+         Location = River,
+         Species,
+         AgeScale = Scale.Age,
+         AgeOtolith = Oto.Age,
+         ForkLength = Fork.Length,
+         TotalLength = Total.Length,
+         Weight,
+         Sex,
+         RepeatSpawn = RPS)
+
+ME_new <-
+  new_ME_BBH %>%
+  bind_rows(new_ME_ALE)
 
 #-------------------------------------------------------------------------------
 # NC -
@@ -1112,6 +1245,15 @@ NY <-
   mutate(Sex = case_when(Sex %in% c("female", "Female") ~ "female",
                          Sex %in% c("male", "Male") ~ "male",
                          Sex %in% c("unknown", "Unknown") ~ "unknown"))
+#-------------------------------------------------------------------------------
+# 06 October 2023 - Use new data from files that Wes sent to Katie Drew
+#                   instead of data created above.
+#-------------------------------------------------------------------------------
+
+
+
+
+
 
 #-------------------------------------------------------------------------------
 # PA -
@@ -1288,7 +1430,7 @@ RI_C <-
          Species,
          AgeScale = Age,
          AgeOtolith,
-         FL,
+         ForkLength = FL,
          TotalLength = TL,
          Weight = W,
          Sex,
@@ -1547,10 +1689,12 @@ AllStates <-
   CT %>%
   bind_rows(MD) %>%
   bind_rows(MA_new) %>%
-  bind_rows(ME) %>%
+  bind_rows(ME_new) %>%
+  # bind_rows(ME) %>%
   bind_rows(NC) %>%
   bind_rows(NH) %>%
-  bind_rows(NY) %>%
+  # bind_rows(NY) %>%
+  bind_rows(NY_new) %>%
   bind_rows(PA) %>%
   bind_rows(RI) %>%
   bind_rows(SC) %>%
@@ -1559,15 +1703,23 @@ AllStates <-
   bind_rows(VA) %>%
   mutate(Region = case_when(Species %in% c("Blueback", "Alewife") & State %in% c("NC_DMF_fi", "NC_DMF_fd") &
                               Location == "ALBEMARLESOUND_NOT IN RIVER" ~ "Mixed Stock",
+                           # (Species == "Alewife" | Species == "unknown")
+                           #   & (State %in% c("MD", "NC_DMF_fi", "NC_DMF_fd", "NJ",
+                           #                   "NY_fd", "NY_fi", "PA", "SERC", "VA")) |
+                           #    (State == "NC_WRC" & Location %in% NC_WRC_MAT) ~ "MAT",
                            (Species == "Alewife" | Species == "unknown")
-                             & (State %in% c("MD", "NC_DMF_fi", "NC_DMF_fd", "NJ",
-                                             "NY_fd", "NY_fi", "PA", "SERC", "VA")) |
-                              (State == "NC_WRC" & Location %in% NC_WRC_MAT) ~ "MAT",
+                           & (State %in% c("MD", "NC_DMF_fi", "NC_DMF_fd", "NJ",
+                                           "NY", "PA", "SERC", "VA")) |
+                             (State == "NC_WRC" & Location %in% NC_WRC_MAT) ~ "MAT",
                             Species == "Alewife" & State %in% c("CT", "MA", "USFWS", "RI") ~ "SNE",
                             (Species == "Alewife" | Species == "unknown") & State %in% c("ME", "NH") ~ "NNE",
                             Species == "Blueback" & State %in% c("ME") ~ "CAN-NNE",
-                            Species == "Blueback"
-                              & (State %in% c("CT", "MD", "NC_DMF_fi", "NC_DMF_fd", "NJ","NY_fd", "NY_fi", "PA",
+                            # Species == "Blueback"
+                            #   & (State %in% c("CT", "MD", "NC_DMF_fi", "NC_DMF_fd", "NJ","NY_fd", "NY_fi", "PA",
+                            #                "SERC", "USFWS", "VA") | (State == "NC_WRC" &
+                            #                                            Location %in% NC_WRC_MAT)) ~ "MAT",
+                           Species == "Blueback"
+                           & (State %in% c("CT", "MD", "NC_DMF_fi", "NC_DMF_fd", "NJ", "NY", "PA",
                                            "SERC", "USFWS", "VA") | (State == "NC_WRC" &
                                                                        Location %in% NC_WRC_MAT)) ~ "MAT",
                             Species == "Blueback" & (State == "NH" | (State == "MA" & Location == "Parker")) ~ "MNE",

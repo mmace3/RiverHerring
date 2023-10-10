@@ -24,16 +24,16 @@ library(readxl)
 
 # Data sets from Katie Drew
 
-# New data sets from Katie Drew (downloaded from ASMFC site on 13 July 2023)
+# New data sets from Katie Drew
 
 # Alewife data
-ALE_new <- read.csv("data/ALE_biodata_04-13-23.csv",
+ALE_new <- read.csv("data/ALE_biodata_09-11-23.csv",
                     header = TRUE) %>%
   mutate(Species = "Alewife")
 
 
 # Blue back herring data
-BBH_new <- read.csv("data/BBH_biodata_04-12-23.csv",
+BBH_new <- read.csv("data/BBh_biodata_09-11-23.csv",
                 header = TRUE) %>%
   mutate(Species = "Blueback")
 
@@ -59,6 +59,11 @@ my_clean_data <- read.csv("clean_data.csv",
                  select(-State) %>%
                  rename(State = New_State) %>%
                  filter(Species != "unknown")
+
+# old cleaned data set
+my_clean_data_old <- read.csv("clean_data_old.csv",
+                              header = TRUE)
+
 
 
 #-------------------------------------------------------------------------------

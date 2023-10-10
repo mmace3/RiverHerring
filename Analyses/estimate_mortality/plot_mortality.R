@@ -25,7 +25,7 @@ library(readxl)
 #-------------------------------------------------------------------------------
 
 
-# region estimates with sexes combined
+# region estimates sexes combined
 
 region_data_raw <- read.csv("Zestimates_by_Region.csv",
                  header = TRUE)
@@ -46,136 +46,71 @@ region_data <-
   mutate(ID = cur_group_id()) %>%
   ungroup()
 
+# region estimates separate sexes
+
+region_data_by_sex_raw <-
+  read.csv("Zestimates_by_Region_by_sex.csv",
+           header = TRUE)
+
+region_data_by_sex <-
+  region_data_by_sex_raw %>%
+  mutate(Yearf = as.factor(Year)) %>%
+  group_by(Region, Species, Sex, AgeMethod) %>%
+  expand(Yearf) %>%
+  ungroup() %>%
+  mutate(Year = as.integer(as.character(Yearf))) %>%
+  select(-Yearf) %>%
+  #arrange(Region, Year, Species, AgeMethod)
+  full_join(region_data_by_sex_raw, by = c("Region", "Species", "Sex", "AgeMethod",
+                                    "Year")) %>%
+  # arrange(Region, Species, AgeMethod, Year) %>%
+  group_by(Region, Species, AgeMethod) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup()
 
 
-region_data_a <- read.csv("Zestimates_by_Region.csv",
-                          header = TRUE) %>%
-  filter(Zmethod %in% c("z_glm")) %>%
-  #mutate(State_Species = paste(State, Species, sep = "_")) %>%
-  #mutate(Region_Species_AgeMethod_Sex = paste(Region, Species, AgeMethod, Sex, sep = "_")) %>%
-  mutate(Region_Species_AgeMethod = paste(Region, Species, AgeMethod, sep = "_"))
+# river level sexes combined
 
-
-region_data_year_blank <-
-  region_data_a %>%
-  expand(Region_Species_AgeMethod, Year) %>%
-  mutate(Region_Species_AgeMethod = paste(str_split_fixed(Region_Species_AgeMethod, pattern = "_", n = 3)[,1],
-                                          str_split_fixed(Region_Species_AgeMethod, pattern = "_", n = 3)[,2],
-                                          str_split_fixed(Region_Species_AgeMethod, pattern = "_", n = 3)[,3],
-                                          sep ="_")) %>%
-  # mutate(Sex = str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,4]) %>%
-  mutate(Species = str_split_fixed(Region_Species_AgeMethod, pattern = "_", n = 4)[,2]) %>%
-  mutate(AgeMethod = str_split_fixed(Region_Species_AgeMethod, pattern = "_", n = 4)[,3]) %>%
-  mutate(Region = str_split_fixed(Region_Species_AgeMethod, pattern = "_", n = 4)[,1])
-
-region_data <-
-  region_data_a %>%
-  full_join(region_data_year_blank, by = c("Year", "Species", "AgeMethod",
-                                           "Region_Species_AgeMethod", "Region")) #%>%
-  #filter(Sex != "unknown")
-
-
-
-# river level combined all sexes
-
-river_data_a <-
+river_data_raw <-
   read.csv("Zestimates_by_River.csv",
-                          header = TRUE,
-           stringsAsFactors = FALSE) %>%
-  filter(Zmethod %in% c("z_glm")) %>%
-  filter(!is.na(Location)) %>%
-  mutate(Region_State_Species = paste(Region, State, Species, sep = "_")) %>%
-  mutate(Region_State_Species_AgeMethod = paste(Region, State, Species, AgeMethod, sep = "__")) %>%
-  mutate(Region_State_Location_Species_AgeMethod = paste(Region, State, Location, Species, AgeMethod, sep = "__"))
-
-
-river_data_year_blank <-
-  river_data_a %>%
-  expand(Region_State_Location_Species_AgeMethod, Year) %>%
-  mutate(Region_State_Location_Species_AgeMethod = paste(str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,1],
-                                          str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,2],
-                                          str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,3],
-                                          str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,4],
-                                          str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,5],
-                                          sep ="__")) %>%
-  mutate(Region_State_Species_AgeMethod = paste(str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,1],
-                                                str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,2],
-                                                str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,4],
-                                                str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,5],
-                                                      sep = "__")) %>%
-  # mutate(Sex = str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,4]) %>%
-  mutate(Species = str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,4]) %>%
-  mutate(AgeMethod = str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,5]) %>%
-  mutate(Region = str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,1]) %>%
-  mutate(State = str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,2]) %>%
-  mutate(Location = str_split_fixed(Region_State_Location_Species_AgeMethod, pattern = "__", n = 5)[,3])
+           header = TRUE,
+           stringsAsFactors = FALSE) # %>%
 
 river_data <-
-  river_data_a %>%
-  full_join(river_data_year_blank, by = c("Year", "Species", "AgeMethod",
-                                           "Region_State_Location_Species_AgeMethod",
-                                           "Region", "State", "Location",
-                                          "Region_State_Species_AgeMethod"))
+  river_data_raw %>%
+  mutate(Yearf = as.factor(Year)) %>%
+  group_by(Region, State, Location, Species, AgeMethod) %>%
+  expand(Yearf) %>%
+  ungroup() %>%
+  mutate(Year = as.integer(as.character(Yearf))) %>%
+  select(-Yearf) %>%
+  full_join(river_data_raw, by = c("Region", "State", "Location", "Species", "AgeMethod",
+                                  "Year")) %>%
+  group_by(Region, State, Species, AgeMethod) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup()
 
 
 # river level separate sexes
 
-river_data_a <-
+river_data_by_sex_raw <-
   read.csv("Zestimates_by_River_by_sex.csv",
            header = TRUE,
-           stringsAsFactors = FALSE) %>%
-  filter(Zmethod %in% c("z_glm")) %>%
-  filter(!is.na(Location)) %>%
-  mutate(Region_State_Species = paste(Region, State, Species, sep = "_")) %>%
-  mutate(Region_State_Species_AgeMethod = paste(Region, State, Species, AgeMethod, sep = "__")) %>%
-  mutate(Region_State_Location_Species_Sex_AgeMethod = paste(Region, State, Location, Species, Sex, AgeMethod, sep = "__"))
+           stringsAsFactors = FALSE)
 
-
-river_data_year_blank <-
-  river_data_a %>%
-  expand(Region_State_Location_Species_Sex_AgeMethod, Year) %>%
-  mutate(Region_State_Location_Species_Sex_AgeMethod = paste(str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,1],
-                                                         str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,2],
-                                                         str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,3],
-                                                         str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,4],
-                                                         str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,5],
-                                                         str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,6],
-                                                         sep ="__")) %>%
-  mutate(Region_State_Species_AgeMethod = paste(str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,1],
-                                                str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,2],
-                                                str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,4],
-                                                str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,6],
-                                                sep = "__")) %>%
-  # mutate(Region_State_Species_AgeMethod = paste(str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,1],
-  #                                                   str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,2],
-  #                                                   str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,4],
-  #                                                   str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,6],
-  #                                                   sep = "__")) %>%
-  # mutate(Sex = str_split_fixed(Region_Species_AgeMethod_Sex, pattern = "_", n = 4)[,4]) %>%
-  mutate(Species = str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,4]) %>%
-  mutate(AgeMethod = str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,6]) %>%
-  mutate(Region = str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,1]) %>%
-  mutate(State = str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,2]) %>%
-  mutate(Location = str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,3]) %>%
-  mutate(Sex = str_split_fixed(Region_State_Location_Species_Sex_AgeMethod, pattern = "__", n = 6)[,5])
-
-
-river_data <-
-  river_data_a %>%
-  full_join(river_data_year_blank, by = c("Year", "Species", "AgeMethod", "Sex",
-                                          "Region_State_Location_Species_Sex_AgeMethod",
-                                          "Region", "State", "Location",
-                                          "Region_State_Species_AgeMethod")) %>%
-  filter(Sex != "unknown")
-
-
-
-
-
-
-
-
-
+river_data_by_sex <-
+  river_data_by_sex_raw %>%
+  mutate(Yearf = as.factor(Year)) %>%
+  group_by(Region, State, Location, Species, Sex, AgeMethod) %>%
+  expand(Yearf) %>%
+  ungroup() %>%
+  mutate(Year = as.integer(as.character(Yearf))) %>%
+  select(-Yearf) %>%
+  full_join(river_data_by_sex_raw, by = c("Region", "State", "Location",
+                                          "Species", "Sex", "AgeMethod", "Year")) %>%
+  group_by(Region, State, Species, AgeMethod) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup()
 
 
 Z_spr_a <- read_excel("Preliminary_Z40_ref_pts_RH_SA_2023.xlsx",
@@ -199,23 +134,14 @@ Z_spr <- bind_rows(Z_spr_a, Z_spr_b) %>%
 
 # Region data separate sexes
 
-Region_Species_AgeMethod <- unique(region_data$Region_Species_AgeMethod)
-
-Max_total_years <-
-  region_data %>%
-  group_by(Region_Species_AgeMethod) %>%
-  mutate(TotalYears = max(Year) - min(Year)) %>%
-  ungroup() %>%
-  filter(TotalYears == max(TotalYears))
-
-my_breaks <- c(min(Max_total_years$Year, na.rm = TRUE):max(Max_total_years$Year, na.rm = TRUE))
+my_breaks <- c(min(region_data_by_sex$Year, na.rm = TRUE):max(region_data_by_sex$Year, na.rm = TRUE))
 
 pdf("region_mortality_plots_by_sex.pdf", width = 7, height = 6)
 
-for(i in Region_Species_AgeMethod)
+for(i in unique(region_data_by_sex$ID))
 {
 
-  sub_data <- subset(region_data, Region_Species_AgeMethod == i)
+  sub_data <- subset(region_data_by_sex, ID == i & Sex != "unknown")
 
   sub_species <- unique(sub_data$Species)
   sub_region <- unique(sub_data$Region)
@@ -228,7 +154,7 @@ for(i in Region_Species_AgeMethod)
   Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
 
 zplot <-
-ggplot(sub_data, aes(x = Year, y = Z, fill = Sex)) +
+ggplot(sub_data, aes(x = Year, y = Z, group = Sex)) +
   geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1,
                 position=position_dodge(0.3)) +
   geom_point(aes(shape = Sex, fill = Sex), position=position_dodge(0.3), size = 3) +
@@ -241,29 +167,22 @@ ggplot(sub_data, aes(x = Year, y = Z, fill = Sex)) +
          x = "",
          title = title_temp) +
   geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
-  theme_bw() #+
+  theme_bw()
 
 print(zplot)
+
+zplot_smoother <-
+  zplot + geom_smooth(aes(linetype = Sex), se = FALSE)
+
+print(zplot_smoother)
 
 }
 dev.off()
 
 
-
-
-
-
-
 # Region data sexes combined
 
-Max_total_years <-
-  region_data %>%
-  group_by(ID) %>%
-  mutate(TotalYears = max(Year) - min(Year)) %>%
-  ungroup() %>%
-  filter(TotalYears == max(TotalYears))
-
-my_breaks <- c(min(Max_total_years$Year, na.rm = TRUE):max(Max_total_years$Year, na.rm = TRUE))
+my_breaks <- c(min(region_data$Year, na.rm = TRUE):max(region_data$Year, na.rm = TRUE))
 
 pdf("region_mortality_plots.pdf", width = 7, height = 6)
 
@@ -310,23 +229,14 @@ dev.off()
 
 # River data sexes combined
 
-Region_State_Species_AgeMethod <- unique(river_data$Region_State_Species_AgeMethod)
-
-Max_total_years <-
-  river_data %>%
-  group_by(Region_State_Location_Species_AgeMethod) %>%
-  mutate(TotalYears = max(Year) - min(Year)) %>%
-  ungroup() %>%
-  filter(TotalYears == max(TotalYears))
-
-my_breaks <- c(min(Max_total_years$Year, na.rm = TRUE):max(Max_total_years$Year, na.rm = TRUE))
+my_breaks <- c(min(river_data$Year, na.rm = TRUE):max(river_data$Year, na.rm = TRUE))
 
 pdf("river_mortality_plots.pdf", width = 7, height = 6)
 
-for(i in Region_State_Species_AgeMethod)
+for(i in unique(river_data$ID))
 {
 
-  sub_data <- subset(river_data, Region_State_Species_AgeMethod == i)
+  sub_data <- subset(river_data, ID == i)
 
   sub_species <- unique(sub_data$Species)
   sub_region <- unique(sub_data$Region)
@@ -364,23 +274,14 @@ dev.off()
 
 # River data sexes separate
 
-Region_State_Species_AgeMethod <- unique(river_data$Region_State_Species_AgeMethod)
-
-Max_total_years <-
-  river_data %>%
-  group_by(Region_State_Location_Species_Sex_AgeMethod) %>%
-  mutate(TotalYears = max(Year) - min(Year)) %>%
-  ungroup() %>%
-  filter(TotalYears == max(TotalYears))
-
-my_breaks <- c(min(Max_total_years$Year, na.rm = TRUE):max(Max_total_years$Year, na.rm = TRUE))
+my_breaks <- c(min(river_data_by_sex$Year, na.rm = TRUE):max(river_data_by_sex$Year, na.rm = TRUE))
 
 pdf("river_mortality_plots_by_sex.pdf", width = 7, height = 6)
 
-for(i in Region_State_Species_AgeMethod)
+for(i in unique(river_data_by_sex$ID))
 {
 
-  sub_data <- subset(river_data, Region_State_Species_AgeMethod == i)
+  sub_data <- subset(river_data_by_sex, ID == i & Sex != "unknown")
 
   sub_species <- unique(sub_data$Species)
   sub_region <- unique(sub_data$Region)
@@ -399,6 +300,8 @@ for(i in Region_State_Species_AgeMethod)
                   position=position_dodge(0.3)) +
     geom_point(aes(shape = Sex, fill = Sex, color = Sex), position=position_dodge(0.3), size = 3) +
     coord_cartesian(ylim = c(0, 3)) +
+    scale_shape_manual(values=c(21, 22)) +
+    scale_fill_manual(values = c("grey", "black")) +
     scale_x_continuous(breaks = my_breaks,
                        labels = my_labels) +
     labs(y = "Z (Instantaneous mortality rate)",
@@ -412,188 +315,215 @@ for(i in Region_State_Species_AgeMethod)
 
   print(zplot)
 
+  zplot_smoother <-
+    zplot + geom_smooth(aes(linetype = Sex), se = FALSE) #+
+
+  print(zplot_smoother)
+
+
 }
 dev.off()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Zdiffs <-
-data %>%
-  group_by(Species, Sex, AgeMethod, Zmethod) %>%
-  summarize(Mean = mean(Z, na.rm = TRUE)) %>%
-  ungroup() %>%
-  pivot_wider(names_from = Sex,
-              values_from = Mean) %>%
-  mutate(diff = male - female)
-
-
-
-
-
-
-
-
-
-sub_data <- subset(data, State_Species_AgeMethod == "VA_Blueback_AgeOtolith")
-
-
-title_temp <- paste(sub_data$State, sub_data$Species, sub_data$AgeMethod, sep = " ")
-
-
-my_breaks <- c(min(sub_data$Year, na.rm = TRUE):max(sub_data$Year, na.rm = TRUE))
-
-my_labels <- ifelse(my_breaks %% 5 == 0, my_breaks, "")
-
-
-ggplot(sub_data, aes(x = Year, y = Z, group = Zmethod, fill = Zmethod)) +
-  geom_errorbar(aes(ymin=Z-Zse, ymax=Z+Zse), width=1,
-                position=position_dodge(0.2)) +
-  geom_point(aes(shape = Zmethod, fill = Zmethod), size = 3, position=position_dodge(0.2)) +
-  scale_shape_manual(values=c(21, 22, 23, 24)) +
-  #scale_fill_manual(values = rep("grey", times = 4)) +
-  coord_cartesian(ylim = c(0, 3)) +
-  # scale_x_discrete(breaks = as.factor(my_breaks),
-  #                  labels = my_labels) +
-  scale_x_continuous(breaks = my_breaks,
-                     labels = my_labels) +
-  labs(y = "Z (Instantaneous mortality rate)",
-       x = "",
-       title = title_temp) +
-  scale_color_manual(name = "Z method",
-                     labels = c("Chapman Robson", "Poisson GLM",
-                                "Poisson GLMM", "Linear \n Regression")) +
-  facet_wrap(~Location) +
-  theme_bw()
-
-
+#-------------------------------------------------------------------------------
+# Plots with age and scale estimates on the same plot
 #-------------------------------------------------------------------------------
 
 
 
-data_spawn %>%
+# Region data sexes combined
 
-  group_by(Species, Sex, AgeMethod, Zmethod, RandomEffect) %>%
-  summarize(Mean = mean(Z, na.rm = TRUE)) %>%
+region_data_b <-
+  region_data_raw %>%
+  mutate(Yearf = as.factor(Year)) %>%
+  group_by(Region, Species, AgeMethod) %>%
+  expand(Yearf) %>%
   ungroup() %>%
-  pivot_wider(names_from = c(RandomEffect),
-              values_from = Mean) %>%
-  mutate(diff = `1` - `2`)
+  mutate(Year = as.integer(as.character(Yearf))) %>%
+  select(-Yearf) %>%
+  #arrange(Region, Year, Species, AgeMethod)
+  full_join(region_data_raw, by = c("Region", "Species", "AgeMethod",
+                                    "Year")) %>%
+  arrange(Region, Species, AgeMethod, Year) %>%
+  group_by(Region, Species, AgeMethod) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup() %>%
+  group_by(Region, Species) %>%
+  mutate(ID2 = cur_group_id()) %>%
+  ungroup()
 
+my_breaks <- c(min(region_data_b$Year, na.rm = TRUE):max(region_data_b$Year, na.rm = TRUE))
 
+pdf("region_mortality_plots_b.pdf", width = 7, height = 6)
 
-
-
-State_Species_AgeMethod_Sex <- unique(data_spawn$State_Species_AgeMethod_Sex)
-
-pdf("mortality_plots_b.pdf", width = 7, height = 7)
-
-# for(i in States)
-# {
-#   for(j in Species)
-#   {
-for(i in State_Species_AgeMethod_Sex)
+for(i in unique(region_data_b$ID2))
 {
 
+  sub_data <- subset(region_data_b, ID2 == i)
 
-  # sub_data <- subset(data, State == i & Species == j)
+  sub_species <- unique(sub_data$Species)
+  sub_region <- unique(sub_data$Region)
+  sub_agemethod <- unique(sub_data$AgeMethod)
 
-  sub_data <- subset(data_spawn, State_Species_AgeMethod_Sex == i)
-
-  title_temp <- paste(sub_data$State, sub_data$Species, sub_data$AgeMethod, sub_data$Sex, sep = " ")
-
-  my_breaks <- c(min(sub_data$Year, na.rm = TRUE):max(sub_data$Year, na.rm = TRUE))
+  title_temp <- paste(sub_region, sub_species, sub_agemethod, sep = " ")
 
   my_labels <- ifelse(my_breaks %% 5 == 0, my_breaks, "")
 
+  Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
 
   zplot <-
-    #ggplot(sub_data, aes(x = Year, y = Z, group = RandomEffect, fill = Zmethod)) +
-    ggplot(sub_data, aes(x = Year, y = Z, group = as.factor(RandomEffect))) +
-    geom_errorbar(aes(ymin=Z-Zse, ymax=Z+Zse), width=1,
-                  position=position_dodge(0.2)) +
-    geom_point(aes(shape = as.factor(RandomEffect), fill = as.factor(RandomEffect)), size = 3, position=position_dodge(0.2)) +
-    scale_shape_manual(values=c(21, 22)) +
-    #scale_fill_manual(values = rep("grey", times = 4)) +
+    ggplot(sub_data, aes(x = Year, y = Z, group = AgeMethod)) +
+    geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
+    geom_point(aes(shape = AgeMethod, fill = AgeMethod), size = 3) +
     coord_cartesian(ylim = c(0, 3)) +
-    # scale_x_discrete(breaks = as.factor(my_breaks),
-    #                  labels = my_labels) +
+    scale_shape_manual(values=c(21, 22)) +
+    scale_fill_manual(values = c("grey", "black")) +
     scale_x_continuous(breaks = my_breaks,
                        labels = my_labels) +
     labs(y = "Z (Instantaneous mortality rate)",
          x = "",
          title = title_temp) +
-    facet_wrap(~Location) +
+    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
     theme_bw()
 
   print(zplot)
 
-  #   }
-  # }
+  zplot_smoother <- zplot + geom_smooth()
+
+  plot(zplot_smoother)
+
+
 }
 dev.off()
 
 
-#-------------------------------------------------------------------------------
+# Region data separate sexes
 
-
-# compare estimates from age versus previous spawning
-
-hh <-
-data %>%
-  right_join(data_a, by = c("State", "Year", "Location", "Species", "Sex", "Zmethod")) %>%
-  filter(Z.y > 0.01) %>%
-  filter(!is.na(Z.x)) %>%
-  mutate(Zdiff = Z.y - Z.x) %>%
-  group_by(State, Location, Species, Sex) %>%
+region_data_by_sex_b <-
+  region_data_by_sex_raw %>%
+  mutate(Yearf = as.factor(Year)) %>%
+  group_by(Region, Species, Sex, AgeMethod) %>%
+  expand(Yearf) %>%
+  ungroup() %>%
+  mutate(Year = as.integer(as.character(Yearf))) %>%
+  select(-Yearf) %>%
+  #arrange(Region, Year, Species, AgeMethod)
+  full_join(region_data_by_sex_raw, by = c("Region", "Species", "Sex", "AgeMethod",
+                                           "Year")) %>%
+  # arrange(Region, Species, AgeMethod, Year) %>%
+  group_by(Region, Species, AgeMethod) %>%
   mutate(ID = cur_group_id()) %>%
+  ungroup() %>%
+  group_by(Region, Species) %>%
+  mutate(ID2 = cur_group_id()) %>%
   ungroup()
 
 
 
+pdf("region_mortality_plots_by_sex_b.pdf", width = 7, height = 6)
+
+for(i in unique(region_data_by_sex_b$ID2))
+{
+
+  sub_data <- subset(region_data_by_sex_b, ID2 == i & Sex != "unknown")
+
+  sub_species <- unique(sub_data$Species)
+  sub_region <- unique(sub_data$Region)
+  sub_agemethod <- unique(sub_data$AgeMethod)
+
+  title_temp <- paste(sub_region, sub_species, sep = " ")
+
+  my_labels <- ifelse(my_breaks %% 5 == 0, my_breaks, "")
+
+  Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+
+  zplot <-
+    ggplot(sub_data, aes(x = Year, y = Z, shape = interaction(Sex, AgeMethod),
+                         fill = interaction(Sex, AgeMethod))
+    ) +
+    geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
+    geom_point(size = 3) +
+    scale_shape_manual(name= "",
+                       values=c(21, 22, 23, 24),
+                       labels = c("Female - Otolith", "Male - Otolith",
+                                  "Female - Scale", "Male - Scale"),
+                       guide = guide_legend(color = "black",
+                                            shape = c(21, 22, 23, 24),
+                                            fill = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"),
+                                            title = "",
+                                            labels = c("d", "d", "d", "d"))
+    ) +
+
+    scale_fill_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"),
+                      labels = c("Female - Otolith", "Male - Otolith",
+                                 "Female - Scale", "Male - Scale"),
+                      guide = guide_legend(color = "black",
+                                           shape = c(21, 22, 23, 24),
+                                           fill = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"),
+                                           title = "",
+                                           labels = c("d", "d", "d", "d"))) +
+    coord_cartesian(ylim = c(0, 3.5)) +
+    scale_x_continuous(breaks = my_breaks,
+                       labels = my_labels) +
+    labs(y = "Z (Instantaneous mortality rate)",
+         x = "",
+         title = title_temp) +
+    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    # geom_smooth() +
+    theme_bw()
+
+
+  print(zplot)
+
+  zplot_smoother <-
+    zplot + geom_smooth(aes(linetype = Sex), se = FALSE)
+
+  print(zplot_smoother)
+
+}
+dev.off()
 
 
 
 
 
+
+
+
+
+
+
+  ggplot(sub_data, aes(x = Year, y = Z, shape = interaction(Sex, AgeMethod),
+                       fill = interaction(Sex, AgeMethod))
+  ) +
+    geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
+    geom_point(size = 3) +
+    scale_shape_manual(name= "",
+    values=c(21, 22, 23, 24),
+                       labels = c("Female - Otolith", "Male - Otolith",
+                                  "Female - Scale", "Male - Scale"),
+                       guide = guide_legend(color = "black",
+                                            shape = c(21, 22, 23, 24),
+                                            fill = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"),
+                                            title = "",
+                                            labels = c("d", "d", "d", "d"))
+                       ) +
+
+    scale_fill_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"),
+                      labels = c("Female - Otolith", "Male - Otolith",
+                                 "Female - Scale", "Male - Scale"),
+                      guide = guide_legend(color = "black",
+                                           shape = c(21, 22, 23, 24),
+                                           fill = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"),
+                                           title = "",
+                                           labels = c("d", "d", "d", "d"))) +
+  coord_cartesian(ylim = c(0, 3.5)) +
+    scale_x_continuous(breaks = my_breaks,
+                       labels = my_labels) +
+    labs(y = "Z (Instantaneous mortality rate)",
+         x = "",
+         title = title_temp) +
+    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    # geom_smooth() +
+    theme_bw()
 

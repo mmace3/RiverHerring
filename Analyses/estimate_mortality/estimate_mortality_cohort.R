@@ -20,7 +20,7 @@
 #-------------------------------------------------------------------------------
 
 library(tidyverse)
-library(glmmTMB) # Poisson GLMM
+# library(glmmTMB) # Poisson GLMM
 
 #-------------------------------------------------------------------------------
 # Load data
@@ -31,7 +31,8 @@ dat <- read.csv("clean_data.csv",
   mutate(Date = as.POSIXct(Date, format="%Y-%m-%d")) %>%
   mutate(Year = as.integer(format(Date, format= "%Y")))
 
-# number of records with an age estimate (should be 243041)
+# number of records with an age estimate (should be 243041) (06 Oct 2023 - probably
+# not anymore)
 dat %>%
   filter(!is.na(AgeScale) | !is.na(AgeOtolith)) %>%
   summarize(n = n())

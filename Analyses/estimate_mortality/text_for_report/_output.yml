@@ -1,0 +1,38 @@
+bookdown::gitbook:
+  css: style.css
+  config:
+    toc:
+      before: |
+        <li><a href="./">A Minimal Book Example</a></li>
+      after: |
+        <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+    edit: https://github.com/USERNAME/REPO/edit/BRANCH/%s
+    download: ["pdf", "epub"]
+bookdown::pdf_book:
+  includes:
+    in_header: preamble.tex
+  latex_engine: xelatex
+  citation_package: natbib
+  keep_tex: yes
+bookdown::epub_book: default
+
+bookdown::word_document2:
+    pandoc_args:
+      - --filter=pandoc-crossref
+    reference_docx: manuscript_template.docx
+    fig_caption: true
+    
+officedown::rdocx_document:
+    pandoc_args:
+      - '--filter=pandoc-crossref'
+    reference_docx: 'manuscript_template.docx'
+    fig_caption: true
+    page_margins:
+      bottom: 1
+      top: 1
+      right: 1
+      left: 1
+      header: 0.5
+      footer: 0.5
+      gutter: 0
+    

@@ -1,0 +1,170 @@
+
+```{r regionplots, }
+
+my_breaks_a <- c(min(region_data$Year, na.rm = TRUE):max(region_data$Year, na.rm = TRUE))
+my_breaks <- ifelse(my_breaks_a %% 10 == 0, my_breaks_a, "")
+my_breaks <- c(1980, 1990, 2000, 2010, 2020)
+
+# pdf("region_mortality_plots.pdf", width = 7, height = 6)
+
+region_plots <- vector(mode = "list", length = length(unique(region_data$ID)))
+
+for(i in unique(region_data$ID))
+{
+
+  sub_data <- subset(region_data, ID == i)
+
+  # sub_species <- unique(sub_data$Species)
+  # sub_region <- unique(sub_data$Region)
+  # sub_agemethod <- unique(sub_data$AgeMethod)
+
+  # title_temp <- paste(sub_region, sub_species, sub_agemethod, sep = " ")
+  title_temp <- unique(sub_data$Region_Species_AgeMethod)
+  my_labels <- ifelse(my_breaks_a %% 10 == 0, my_breaks_a, "")
+  my_labels <- as.character(my_breaks)
+  # Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+
+  zplot <-
+    ggplot(sub_data, aes(x = Year, y = Z)) +
+    geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
+    geom_point(size = 3) +
+    coord_cartesian(ylim = c(0, 3)) +
+    scale_x_continuous(breaks = my_breaks,
+                       labels = my_labels) +
+    labs(y = "Z (Instantaneous mortality rate)",
+         x = "",
+         title = title_temp) +
+    # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    theme_bw()
+
+  # print(zplot)
+
+   
+  zplot_smoother <- zplot + geom_smooth(se = FALSE)
+  region_plots[[i]] <- zplot_smoother
+  names(region_plots)[i] <- title_temp
+  # plot(zplot_smoother)
+
+
+}
+
+# dev.off()
+
+```
+
+
+
+```{r, fig.width = 8, fig.height = 8}
+
+plot_grid(region_plots[["NNE_Alewife_AgeScale"]], 
+          NULL, 
+          NULL, 
+          NULL,
+          nrow = 2)
+
+
+```
+
+
+\newpage
+```{r, fig.width = 6.2, fig.height = 6.2}
+
+plot_grid(region_plots[["MAT_Alewife_AgeScale"]],
+          region_plots[["MAT_Alewife_AgeOtolith"]],
+          region_plots[["SNE_Alewife_AgeScale"]],
+          region_plots[["SNE_Alewife_AgeOtolith"]],
+          nrow = 2)
+
+```
+
+\newpage
+```{r, fig.width = 6.2, fig.height = 6.2}
+
+plot_grid(region_plots[["CAN-NNE_Blueback_AgeScale"]],
+          NULL,
+          NULL,
+          NULL,
+          nrow = 2)
+```
+
+
+
+```{r, fig.width = 6.2, fig.height = 6.2}
+
+plot_grid(region_plots[["MNE_Blueback_AgeScale"]],
+          region_plots[["MNE_Blueback_AgeOtolith"]],
+          region_plots[["SNE_Blueback_AgeScale"]],
+          region_plots[["SNE_Blueback_AgeOtolith"]],
+          nrow = 2)
+```
+
+
+```{r, fig.width = 6.2, fig.height = 6.2}
+
+plot_grid(region_plots[["MAT_Blueback_AgeScale"]],
+          region_plots[["MAT_Blueback_AgeOtolith"]],
+          region_plots[["SAT_Blueback_AgeScale"]],
+          region_plots[["SAT_Blueback_AgeOtolith"]],
+          nrow = 2)
+```
+
+
+```{r riverplots}
+
+
+my_breaks <- c(min(river_data$Year, na.rm = TRUE):max(river_data$Year, na.rm = TRUE))
+
+my_breaks <- c(1980, 1990, 2000, 2010, 2020)
+
+# pdf("region_mortality_plots.pdf", width = 7, height = 6)
+
+river_plots <- vector(mode = "list", length = length(unique(river_data$ID)))
+
+# pdf("river_mortality_plots.pdf", width = 7, height = 6)
+
+
+for(i in unique(river_data$ID))
+{
+
+  sub_data <- subset(river_data, ID == i)
+
+  sub_species <- unique(sub_data$Species)
+  sub_region <- unique(sub_data$Region)
+  sub_state <- unique(sub_data$State)
+  sub_agemethod <- unique(sub_data$AgeMethod)
+
+  title_temp <- paste(sub_region, sub_state, sub_species, sub_agemethod, sep = " ")
+
+  my_labels <- ifelse(my_breaks %% 10 == 0, my_breaks, "")
+
+  # Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+
+  zplot <-
+    ggplot(sub_data, aes(x = Year, y = Z)) +
+    geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
+    geom_point(size = 2) +
+    coord_cartesian(ylim = c(0, 3)) +
+    scale_x_continuous(breaks = my_breaks,
+                       labels = my_labels) +
+    labs(y = "Z (Instantaneous mortality rate)",
+         x = "",
+         title = title_temp) +
+    # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    facet_wrap(~Location
+    ) +
+    theme_bw() 
+
+  zplot_smoother <- zplot + geom_smooth(se = FALSE)
+  river_plots[[i]] <- zplot_smoother
+  names(river_plots)[i] <- title_temp
+  # print(zplot)
+
+}
+# dev.off()
+
+
+
+```
+
+
+

@@ -1,0 +1,53 @@
+The files in this directory contain total mortality estimates for river herring
+that were estimated as part of the 2023 Benchmark Stock Assessment through the
+ASFMC.
+
+Code used to calculate estimates is available at:
+https://github.com/mmace3/RiverHerring/tree/main/Analyses/estimate_mortality
+
+There are 6 files in this directory.
+
+Each file has up to 10 columns:
+
+Region:    (character) Region location for where mortality estimate is from
+State:     (character) State where data for mortality estimate is from
+Year:      (integer)   Year for mortality estimate
+Location:  (character) Specific geographic location in state where data for mortality
+                       estimate if from
+Species:   (character) Blueback or Alewife
+Sex:       (character) female, male, or unknown
+AgeMethod: (character) structure used to age fish. AgeScale = Scale, AgeOtolith = otolith
+Zmethod:   (character) method used to calculate mortality. z_glm = poisson regression
+Z:         (real number) total instantaneous mortality estimate
+Zse:       (real number) standard error of Z. From poisson regression.
+
+The six files are:
+
+Zestimates_by_Region.csv
+    total mortality estimates by region, year, and species
+
+Zestimates_by_Region_by_sex.csv
+    total mortality estimates by region, year, species, and sex
+
+Zestimates_by_River.csv
+    total mortality esimates by river, year, and species
+
+Zestimates_by_River_by_sex.csv
+    total mortality estimates by river, year, species, and sex
+
+Zestimates_by_cohort_by_region.csv
+    total mortality estimates calculated by following cohorts over time.
+    Estimates are by region, year, and species
+
+Zestimates_by_cohort_by_river.csv
+    total mortality estimates calculated by following cohorts over time.
+    Estimates are by river, year, and species
+
+
+
+NOTES:
+
+06 October 2023 - Uploaded new versions of all six files after 
+                  including modified data from NY and data from Maine
+                  that has rivers separated instead of all grouped
+                  together.

@@ -20,3 +20,28 @@ Data/
 data/
 Analyses/clean_data/data
 /Meetings
+
+
+
+ 
+Analyses/estimate_mortality/ASMFC Style Guide.pdf
+Analyses/estimate_mortality/ASMFC_images.R
+Analyses/estimate_mortality/Preliminary_Z40_ref_pts_RH_SA_2023.xlsx
+Analyses/estimate_mortality/QAQC_estimates.R
+Analyses/estimate_mortality/_extra.R
+Analyses/estimate_mortality/estimates_06_October_2023/
+Analyses/estimate_mortality/mortality_plots_b.pdf
+Analyses/estimate_mortality/region_mortality_cohort_plots.pdf
+Analyses/estimate_mortality/region_mortality_plots.pdf
+Analyses/estimate_mortality/region_mortality_plots_b.pdf
+Analyses/estimate_mortality/region_mortality_plots_by_sex.pdf
+Analyses/estimate_mortality/region_mortality_plots_by_sex_b.pdf
+Analyses/estimate_mortality/river_mortality_cohort_plots.pdf
+Analyses/estimate_mortality/river_mortality_plots.pdf
+Analyses/estimate_mortality/river_mortality_plots_by_sex.pdf
+Analyses/estimate_mortality/samplesize_mortality.R
+Analyses/estimate_mortality/text_for_report/
+Literature/ChapmanandRobson_1960 Biometrics Analysis of a catch curve.pdf
+docs/
+		
+		

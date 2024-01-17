@@ -5,9 +5,12 @@ recruitment was assumed to be equal to the age of full (> 99%) maturity, which w
 age 5 for all regions. Estimates were only calculated for years and locations
 when there were at least 3 ages equal to or older than the age of full recruitment and
 when there were at least 30 individuals among those ages. For the river level
-spatial scale the results below are summarized by river within each state. Locally
+spatial scale the results below are summarized by river and region within each state. Locally
 estimated scatterplot smoothers (LOESS) were used to to visualize trends in Z 
-estimates over time.
+estimates over time. Approximate ninety-five percent confidence intervals for mortality estimates
+were calculated as $Z \pm (2 \times SE)$ where $SE$ is the asymptotic standard error from
+the poisson log-linear model. Code for data preparation and analyses is online at
+https://github.com/mmace3/RiverHerring.
 
 
 ```{r }
@@ -16,7 +19,7 @@ estimates over time.
 # combined sexes maturity at ages less than 5.
 
 # So potentially could use age 4 as age at full maturity and then age at full
-# selection in Z estimates for CAN-NNE region for Blueback
+# selection in Z estimates for CAN-NNE region for Blueback would be 4 instead of 5
 ```
 
 ```{r createfigcaps, echo = FALSE}
@@ -37,7 +40,8 @@ file.copy(from = paste0(dir, "Zestimates_by_region.csv"),
 # region estimates sexes combined
 
 region_data_raw <- read.csv("Zestimates_by_Region.csv",
-                 header = TRUE)
+                 header = TRUE) %>%
+                 filter(Z > 0)
 
 region_data <-
   region_data_raw %>%
@@ -72,7 +76,8 @@ file.copy(from = paste0(dir, "Zestimates_by_river.csv"),
 river_data_raw <-
   read.csv("Zestimates_by_River.csv",
            header = TRUE,
-           stringsAsFactors = FALSE) # %>%
+           stringsAsFactors = FALSE) %>%
+   filter(Z > 0)
 
 river_data <-
   river_data_raw %>%
@@ -87,98 +92,109 @@ river_data <-
   filter(Region != "Mixed Stock") %>%
   filter(Species != "unknown") %>%
   group_by(Region, State, Species, AgeMethod) %>%
-  mutate(paste(Region, State, Species, AgeMethod, sep = "_")) %>%
+  mutate(Region_State_Species_AgeMethod = paste(Region, State, Species, 
+                                                AgeMethod, sep = "_")) %>%
   mutate(ID = cur_group_id()) %>%
-  ungroup()
+  ungroup() %>%
+  mutate(NewLocation = case_when(Location == "ALBEMARLESOUND_ALLIGATOR RIVER" ~ "Alligator River",
+                                 Location == "ALBEMARLESOUND_CHOWAN RIVER" ~ "Chowan River",
+                                 Location == "ALBEMARLESOUND_PASQUOTANK RIVER" ~ "Pasquotank River",
+                                 Location == "ALBEMARLESOUND_PERQUIMANS RIVER" ~ "Perquimans River",
+                                 Location == "ALBEMARLESOUND_ROANOKE RIVER" ~ "Roanoke River",
+                                 Location == "ALBEMARLESOUND_SCUPPERNONG RIVER" ~ "Scuppernong River",
+                                 Location == "NEUSE_NEUSE RIVER" ~ "Nuese River",
+                                 Location == "ALBEMARLESOUND_LITTLE RIVER" ~ "Little River",
+                                 Location == "Wilson landing" ~ "Waccamaw River",
+                                 Location == "Arrowhead Landing, Santee River (Rediversion Canal)" ~ "Santee River",
+                                 TRUE ~ Location)) %>%
+  select(-Location) %>%
+  rename(Location = NewLocation)
+
+
+
+
+
 
 #paste(sub_region, sub_state, sub_species, sub_agemethod, sep = " ")
+
+Z_spr <- read_excel("RH_sSPR_Tables_12_06_23.xlsx",
+                    sheet = "Regional Z40",
+                    skip = 1,
+                    range = cell_limits(c(2, 1), c(9, 4)),
+                    col_types = c("text", "text", "numeric", "text"),
+                    col_names = c("Region", "SZ40", "DZ40", "Species")) %>%
+           mutate(Z40 = as.numeric(str_sub(SZ40, start = 0L, end = 4L))) %>%
+           mutate(Species = if_else(Species == "ALE", "Alewife", "Blueback"))
+
+
+
 ```
 
 # Regional level Z Estimates
 
 ## Alewife
 
-### North northeastern US (NNE)
+### Northern New England (NNE)
 
 Mortality estimates were only available from scale data for the NNE region. There
 was a decreasing trend from the early 1990s until mid 2000, then there was an
 increase until around 2015 followed by a decrease in the final years of the time
-series (`r figure("NNE-Alewife-plot", display = "cite")`). For the entire time series, average Z was `r format(mean(subset(region_data, Region == "NNE" & Species == "Alewife")$Z, na.rm = TRUE), digits = 2)` per year and ranged from `r format(min(subset(region_data, Region == "NNE" & Species == "Alewife")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "NNE" & Species == "Alewife")$Z, na.rm = TRUE), digits = 2)` per year.
+series (`r figure("NNE-Alewife-plot", display = "cite")`). For the entire time series, average Z was `r format(mean(subset(region_data, Region == "NNE" & Species == "Alewife")$Z, na.rm = TRUE), digits = 2)`/yr and ranged from `r format(min(subset(region_data, Region == "NNE" & Species == "Alewife")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "NNE" & Species == "Alewife")$Z, na.rm = TRUE), digits = 2)`/yr.
 
-### South northeastern US (SNE)
+### Southern New England (SNE)
 
-Mortality estimates were available for scale data from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` and for scale data
-from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` for otolith data. For scale data there was a slight increase from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` until 2005 and then a slight decreasing trend until `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)`, the most recent year with an estimate (`r figure("SNE-MAT-Alewife-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year.  
-\newline  
-
-For otolith data, Z estimates varied and there was no strong trend from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to 2020 that was followed by a decreasing trend until `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtotlith" & !is.na(Z))$Year)`,
-the most recent year with an estimate. During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year.
+Mortality estimates were available for scale data from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` and
+from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` for otolith data. For scale data there was a slight increase from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` until 2005 and then a slight decreasing trend until `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` (`r figure("SNE-MAT-Alewife-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr. For otolith data, Z estimates varied and there was no strong trend from `r min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to 2020, which was followed by a decreasing trend until `r max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "SNE" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr.
 
 
-### Mid-Atlantic US (MAT)
+### Mid-Atlantic (MAT)
 
-Mortality estimates were available for scale data from `r min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` and for otolith data
-from `r min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` for otolith data. For scale data there was a decreasing trend across the entire time series (`r figure("NNE-Alewife-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year.  
-\newline  
-
-For otolith data, Z estimates varied and there was no strong trend from `r min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to 2020 that was followed by a decreasing trend until `r max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtotlith" & !is.na(Z))$Year)`,
-the most recent year with an estimate. During this time period average Z was `r format(mean(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year.
+Mortality estimates were available for scale data from `r min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` and for otolith data
+from `r min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. For scale data there was a decreasing trend across the entire time series (`r figure("SNE-MAT-Alewife-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr. For otolith data, Z estimates varied and there was no strong trend from `r min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to 2020, which was followed by a decreasing trend until `r max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. During this time period average Z was `r format(mean(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "MAT" & Species == "Alewife" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr.
 
 ## Blueback
 
-### Canada/North northeastern US (CAN-NNE)
+### Canadian-Northern New England (CAN-NNE)
 
-Mortality estimates were only available from scale data for the NNE region from 
+Mortality estimates were only available from scale data for the CAN-NNE region from 
 `r min(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)`. Mortality rates varied over
-this time period, but there was an overall decreasing trend (`r figure("CAN-NNE-Blueback-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year.
+this time period, but there was an overall decreasing trend (`r figure("CAN-NNE_Blueback_AgeScale", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "CAN-NNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr.
 
-### Mid-northeastern US (MNE)
+### Middle New England (MNE)
 
 Mortality estimates were available for scale data from `r min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` and for otolith data
 from `r min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. Mortality
-estimates from scale data varied during `r min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` but overall there was a decreasing trend (`r figure("MNE-SNE-Blueback-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year.  
-\newline  
-
-For otolith data, there were only two Z estimates of `r format(min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` in `r min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` and `r format(max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` in `r max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`.
+estimates from scale data varied during `r min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` but overall there was a decreasing trend (`r figure("MNE-SNE-Blueback-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr. For otolith data, there were only two Z estimates of `r format(min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr in `r min(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` and `r format(max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr in `r max(subset(region_data, Region == "MNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`.
 
 
-### South northeastern US (SNE)
+### Southern New England (SNE)
 
 Mortality estimates were available for scale data from `r min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` and for otolith data
 from `r min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. Mortality
-estimates from scale data varied during `r min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` but overall there was a increasing trend (`r figure("MNE-SNE-Blueback-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year.  
-\newline  
+estimates from scale data varied during `r min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` but overall there was a increasing trend (`r figure("MNE-SNE-Blueback-plot", display = "cite")`). During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr. For otolith data, Z estimates varied and there was a slightly increasing trend from `r min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to 2020. During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr.
 
-For otolith data, Z estimates varied and there was an increasing trend from `r min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to 2020 that was followed by a decreasing trend until `r max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtotlith" & !is.na(Z))$Year)`, the most recent year with an estimate. During this time period average Z was `r format(mean(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "SNE" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year.
-
-### Mid-Atlantic US (MAT)
+### Mid-Atlantic (MAT)
 
 Mortality estimates were available for scale data from `r min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` and for otolith data
 from `r min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. Mortality estimates
-from scale data showed no strong trends over time (`r figure("MAT-SAT-Blueback-plot", display = "cite")`). Average Z for scale data was `r format(mean(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year.  
-\newline  
+from scale data showed no strong trends over time (`r figure("MAT-SAT-Blueback-plot", display = "cite")`). Average Z for scale data was `r format(mean(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr. For otolith data, Z estimates varied and there was an overall decreasing trend
+during `r min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. During this time period average Z was `r format(mean(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr.
 
-For otolith data, Z estimates varied and there was an overall decreasing trend
-during `r min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. During this time period average Z was `r format(mean(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "MAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year.
+### South Atlantic (SAT)
 
-### South Atlantic US (SAT)
-
-Mortality estimates were available for scale data from `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` and for otolith data only on estimate was available from `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. Besides the relatively high Z estimate in `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)`,
-for the scale data there was an overall increasing trend from 2013 to `r max(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` (`r figure("MAT-SAT-Blueback-plot", display = "cite")`). Average Z for scale data was `r format(mean(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year and ranged
-from `r format(min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` to `r format(max(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)` per year.  
-\newline  
-
-For ototlith data, there was only one Z estimate in `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` of `r format(min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)` per year.
+Mortality estimates were available for scale data from `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` to `r max(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` and for otolith data only one estimate was available from `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)`. Besides the relatively high Z estimate in `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)`,
+for the scale data there was an overall increasing trend from 2013 to `r max(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale" & !is.na(Z))$Year)` (`r figure("MAT-SAT-Blueback-plot", display = "cite")`). Average Z for scale data was `r format(mean(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr and ranged
+from `r format(min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr to `r format(max(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr. For ototlith data, there was only one Z estimate in `r min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeOtolith" & !is.na(Z))$Year)` of `r format(min(subset(region_data, Region == "SAT" & Species == "Blueback" & AgeMethod == "AgeOtolith")$Z, na.rm = TRUE), digits = 2)`/yr.
 
 # River level Z estimates
 
@@ -186,47 +202,253 @@ For ototlith data, there was only one Z estimate in `r min(subset(region_data, R
 
 ### Maine
 
-### New Hampshire
+```{r, }
 
-### Connecticut
+ME_Alewife_AgeScale <- subset(river_data, Species == "Alewife" & State == "ME" &
+                                AgeMethod == "AgeScale")
+
+ME_Alewife_AgeScale_A <-
+  ME_Alewife_AgeScale %>%
+  # filter(!is.na(Z)) %>%
+  mutate(NotNA = if_else(!is.na(Z), 1, 0)) %>%
+  group_by(Location) %>%
+  mutate(sum_NotNA = sum(NotNA)) %>%
+  ungroup() %>%
+  filter(sum_NotNA <= 2)
+
+ME_Alewife_AgeScale_B <-
+  ME_Alewife_AgeScale %>%
+  filter(!Location %in% unique(ME_Alewife_AgeScale_A$Location))
+
+
+N_ME_Alewife_AgeScale_A <- length(unique(ME_Alewife_AgeScale_A$Location))
+ME_Alewife_AgeScale_B <- length(unique(ME_Alewife_AgeScale_B$Location))
+
+```
+
+
+
+Mortality estimates from scale data were available for `r length(unique(ME_Alewife_AgeScale$Location))` rivers. For `r N_ME_Alewife_AgeScale_A` rivers there was only one or two estimates and among all these rivers mortality estimates ranged from `r format(min(subset(ME_Alewife_AgeScale, Location %in% unique(ME_Alewife_AgeScale_A$Location) & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(ME_Alewife_AgeScale, Location %in% unique(ME_Alewife_AgeScale_A$Location) & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(ME_Alewife_AgeScale, Location %in% unique(ME_Alewife_AgeScale_A$Location) & !is.na(Z))$Z), digits = 2)`/yr (`r figure("ME_plot_A", display = "cite")`). For the ME C11, ME C20, ME N13, and ME N2 rivers there were only 3 estimates available from each river and these ranged from `r format(min(subset(ME_Alewife_AgeScale, Location %in% c("ME C11", "ME C20", "ME N13", "ME N2") & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(ME_Alewife_AgeScale, Location %in% c("ME C11", "ME C20", "ME N13", "ME N2") & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(ME_Alewife_AgeScale, Location %in% c("ME C11", "ME C20", "ME N13", "ME N2") & !is.na(Z))$Z), digits = 2)`/yr (`r figure("ME_plot_B", display = "cite")`). There was a decreasing trend in the ME C10, ME C14, ME C4, ME C6, and ME C8 rivers and across all rivers, mortality estimates ranged from `r format(min(subset(ME_Alewife_AgeScale, Location %in% c("ME C10", "ME C14", "ME C4", "ME C6", "ME C8") & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(ME_Alewife_AgeScale, Location %in% c("ME C10", "ME C14", "ME C4", "ME C6", "ME C8") & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(ME_Alewife_AgeScale, Location %in% c("ME C10", "ME C14", "ME C4", "ME C6", "ME C8") & !is.na(Z))$Z), digits = 2)`/yr. In the remaining rivers there was variation over time with no strong trends and across all of these rivers mortality estimates ranged from `r format(min(subset(ME_Alewife_AgeScale, !Location %in% c("ME C10", "ME C14", "ME C4", "ME C6", "ME C8", "ME C11", "ME C20", "ME N13", "ME N2", unique(ME_Alewife_AgeScale_A$Location)) & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(ME_Alewife_AgeScale, !Location %in% c("ME C10", "ME C14", "ME C4", "ME C6", "ME C8", "ME C11", "ME C20", "ME N13", "ME N2", unique(ME_Alewife_AgeScale_A$Location)) & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(ME_Alewife_AgeScale, !Location %in% c("ME C10", "ME C14", "ME C4", "ME C6", "ME C8", "ME C11", "ME C20", "ME N13", "ME N2", unique(ME_Alewife_AgeScale_A$Location)) & !is.na(Z))$Z), digits = 2)`/yr.
+
+### New Hampshire
+```{r }
+a_NH <- unique(subset(river_data, Species == "Alewife" & State == "NH")$Location)
+a_NH_n <- length(unique(subset(river_data, Species == "Alewife" & State == "NH")$Location))
+
+```
+
+Mortality estimates from scale data were available for the 
+`r paste(unique(subset(river_data, Species == "Alewife" & State == "NH")$Location)[-a_NH_n], collapse = ", ") `, and the `r unique(subset(river_data, Species == "Alewife" & State == "NH")$Location)[a_NH_n]` (`r figure("NNE-NH-Alewife-AgeScale", display = "cite")`). In all `r a_NH_n` rivers there was generally a declining trend in Z estimates over the time series. Average mortality for the `r a_NH[1]` was `r format(mean(subset(river_data, Species == "Alewife" & State == "NH" & Year %in% c(1996:2004) & Location == a_NH[1])$Z, na.rm = TRUE), digits = 2)`/yr during 1996-2004 and declined to `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[1] & !is.na(Z) & Year == max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[1] & !is.na(Z))$Year))$Z, digits = 2)`/yr in `r max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[1] & !is.na(Z))$Year)`. In the `r a_NH[2]`, the Z estimate in 1993 was `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[2] & Year == 1993)$Z, digits = 2)`/yr, increased to `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[2] & Year == 2009)$Z, digits = 2)`/yr in 2009, and then decreased to `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[2] & !is.na(Z) & Year == max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[2] & !is.na(Z))$Year))$Z, digits = 2)`/yr in `r max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[2] & !is.na(Z))$Year)`. In the `r a_NH[3]` the Z estimate in 1992 was `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[3] & Year == 1992)$Z, digits = 2)`/yr and decreased over time with an estimate of `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[3] & !is.na(Z) & Year == max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[3] & !is.na(Z))$Year))$Z, digits = 2)`/yr in `r max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[3] & !is.na(Z))$Year)`. In the `r a_NH[4]`, there was a decreasing trend over time with a Z estimate of `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[4] & !is.na(Z) & Year == min(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[4] & !is.na(Z))$Year))$Z, digits = 2)`/yr in `r min(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[4] & !is.na(Z))$Year)` that declined to `r format(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[4] & !is.na(Z) & Year == max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[4] & !is.na(Z))$Year))$Z, digits = 2)`/yr in `r max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[4] & !is.na(Z))$Year)`. Mortality estimates in the `r a_NH[5]` did not have any substantial trend over time and the average mortality was `r format(mean(subset(river_data, Species == "Alewife" & State == "NH" & Year %in% c(1996:2004) & Location == a_NH[5])$Z, na.rm = TRUE), digits = 2)`/yr during `r min(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[5] & !is.na(Z))$Year)` to `r max(subset(river_data, Species == "Alewife" & State == "NH" & Location == a_NH[5] & !is.na(Z))$Year)`.
+
+### Massachusetts
+```{r }
+a_MA_scale <- unique(subset(river_data, Species == "Alewife" & State == "MA" & AgeMethod == "AgeScale")$Location)
+
+a_MA_otolith <- unique(subset(river_data, Species == "Alewife" & State == "MA" & AgeMethod == "AgeOtolith")$Location)
+
+a_MA_both <- intersect(a_MA_scale, a_MA_otolith)
+
+a_MA_otolith_only <- setdiff(a_MA_otolith, a_MA_scale)
+
+a_MA_both_n <- length(unique(subset(river_data, Species == "Alewife" & State == "MA" & Location %in% a_MA_both)$Location))
+
+```
+
+Mortality estimates from both scale and otolith data were available for the `r paste(paste(a_MA_both[1], ", ", sep = ""), paste(a_MA_both[-c(1, a_MA_both_n)], collapse = " River, "), " River, and ", a_MA_both[a_MA_both_n], " River", sep = "")`, while mortality estimates from otolith data were available from the `r setdiff(a_MA_otolith, a_MA_scale)` River. The only Z estimate from the `r a_MA_both[1]` from scale data was `r format(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[1] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in `r subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[1] & AgeMethod == "AgeScale" & !is.na(Z))$Year` (`r figure("SNE-MA-Alewife-AgeScale", display = "cite")`). Mortality estimates from otolith data were available from 2015 to 2022 in the `r a_MA_both[1]`. These estimates varied over time but showed no substantial trend (`r figure("SNE-MA-Alewife-AgeOtolith", display = "cite")`) and the average was `r format(mean(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[1])$Z, na.rm = TRUE), digits = 2)`/yr. In the `r a_MA_both[2]` River, mortality estimates from scales varied but had no substantial trend during `r min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2]  & !is.na(Z) & AgeMethod == "AgeScale")$Year)` to `r max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2]  & !is.na(Z) & AgeMethod == "AgeScale")$Year)` (`r figure("SNE-MA-Alewife-AgeScale", display = "cite")`) and the average was `r format(mean(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2] & Year %in% c(1993, 2008) & AgeMethod == "AgeScale")$Z, na.rm = TRUE), digits = 2)`/yr. Mortality estimates from otolith data in the `r a_MA_both[2]` River decreased from `r format(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2] & Year == min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year) & AgeMethod == "AgeOtolith")$Z, digits = 2)`/yr
+ in `r min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2] & !is.na(Z) & AgeMethod == "AgeOtolith")$Year)` to `r format(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2] & Year == max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year) & AgeMethod == "AgeOtolith")$Z, digits = 2)`/yr in `r max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[2] & !is.na(Z) & AgeMethod == "AgeOtolith")$Year)` (`r figure("SNE-MA-Alewife-AgeOtolith", display = "cite")`). Only one estimate from scale data was available from the `r a_MA_both[3]` River and was `r format(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in `r subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeScale" & !is.na(Z))$Year`. In the `r a_MA_both[3]` River for otolith data, there was a slight decreasing trend from `r format(subset(river_data, Species == "Alewife" & Year == min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year) & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in `r subset(river_data, Species == "Alewife" & Year == min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year) & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year` to `r format(subset(river_data, Species == "Alewife" & Year == max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year) & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in `r subset(river_data, Species == "Alewife" & Year == max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year) & State == "MA" & Location == a_MA_both[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year`. In the `r a_MA_both[4]` River, mortality estimates from scale data had an increasing trend during `r subset(river_data, Species == "Alewife" & State == "MA" & Year == min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeScale")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeScale" & !is.na(Z))$Year` to `r subset(river_data, Species == "Alewife" & State == "MA" & Year == max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeScale")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeScale" & !is.na(Z))$Year` and went from `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeScale")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr to `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeScale")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr. Mortality estimates from otolith data also had an increasing trend and went from `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeOtolith")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in `r subset(river_data, Species == "Alewife" & State == "MA" & Year == min(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeOtolith")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year` to `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeOtolith")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in `r subset(river_data, Species == "Alewife" & State == "MA" & Year == max(subset(river_data, Species == "Alewife" & State == "MA" & Location == a_MA_both[4] & !is.na(Z) & AgeMethod == "AgeOtolith")$Year) & Location == a_MA_both[4] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year`. In the `r a_MA_both[5]` River, mortality estimates from scale data was `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == 2004 & Location == a_MA_both[5] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in 2004, decreased to `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == 2009 & Location == a_MA_both[5] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in 2009 and then increased to `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == 2012 & Location == a_MA_both[5] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in 2012. Mortality estimates from otolith data varied and had a slightly decreasing trend over time and was `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == 2022 & Location == a_MA_both[5] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2022.  There were only otolith estimates available from the `r a_MA_otolith_only` River, which had a decreasing trend over time (`r figure("SNE-MA-Alewife-AgeOtolith", display = "cite")`). The mortality estimate in 2013 was `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == 2013 & Location == a_MA_otolith_only & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr and decreased to `r format(subset(river_data, Species == "Alewife" & State == "MA" & Year == 2022 & Location == a_MA_otolith_only & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2022.
+
+### Rhode Island
+
+```{r }
+a_RI <- unique(subset(river_data, Species == "Alewife" & State == "RI")$Location)
+a_RI_n <- length(unique(subset(river_data, Species == "Alewife" & State == "RI")$Location))
+
+```
+
+
+Mortality estimates from scale data were available from the `r a_RI[1]` River and `r a_RI[2]` River. Only one estimate of `r format(subset(river_data, Species == "Alewife" & State == "RI" & Year == 2017 & Location == a_RI[1] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in 2017 was available from the `r a_RI[1]` River (`r figure("SNE-RI-Alewife-AgeScale", display = "cite")`). For the `r a_RI[2]` River, mortality varied over time with no substantial trend and was `r format(subset(river_data, Species == "Alewife" & State == "RI" & Year == 2018 & Location == a_RI[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in 2018.
 
 ### New York
 
-### New Jersey
-
-### Delaware
+Mortality estimates from scale and otolith data were available from the Hudson River. For scale data, mortality estimates decreased from `r format(subset(river_data, Species == "Alewife" & State == "NY" & Year == 2012 & Location == "Hudson" & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in 2012 to `r format(subset(river_data, Species == "Alewife" & State == "NY" & Year == 2018 & Location == "Hudson" & AgeMethod == "AgeScale" & !is.na(Z))$Z, digits = 2)`/yr in 2018 (`r figure("MAT-NY-Alewife-AgeScale", display = "cite")`). There were two estimates from otolith data of `r format(subset(river_data, Species == "Alewife" & State == "NY" & Year == 2021 & Location == "Hudson" & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2021 and `r format(subset(river_data, Species == "Alewife" & State == "NY" & Year == 2022 & Location == "Hudson" & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2022 (`r figure("MAT-NY-Alewife-AgeOtolith", display = "cite")`).
 
 ### Maryland
 
+```{r }
+a_MD <- unique(subset(river_data, Species == "Alewife" & State == "MD")$Location)
+a_MD_n <- length(unique(subset(river_data, Species == "Alewife" & State == "MD")$Location))
+
+
+a_MD_SERC <- unique(subset(river_data, Species == "Alewife" & State == "SERC")$Location)
+a_MD_SERC_N <- length(unique(subset(river_data, Species == "Alewife" & State == "SERC")$Location))
+```
+
+Mortality estimates from scale data were available from the `r a_MD[1]` and `r a_MD[2]` and were available from otolith from the `r a_MD_SERC[1]` River. Mortality estimates in the `r a_MD[1]` had no substantial trend over time and varied from `r format(min(subset(river_data, Species == "Alewife" & State == "MD" & Location == a_MD[1] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Alewife" & State == "MD" & Location == a_MD[1] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Alewife" & State == "MD" & Location == a_MD[1] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr (`r figure("MAT-MD-Alewife-AgeScale", display = "cite")`). Mortality estimates in the `r a_MD[2]` had no substantial trend over time and varied from `r format(min(subset(river_data, Species == "Alewife" & State == "MD" & Location == a_MD[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Alewife" & State == "MD" & Location == a_MD[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Alewife" & State == "MD" & Location == a_MD[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr. Only one estimate of `r format(subset(river_data, Species == "Alewife" & State == "SERC" & Location == a_MD_SERC[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in `r subset(river_data, Species == "Alewife" & State == "SERC" & Location == a_MD_SERC[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Year`  was available from the Marshyhope River (`r figure("MAT-SERC-Alewife-AgeOtolith", display = "cite")`).
+
 ### Virginia
+
+```{r }
+a_VA <- unique(subset(river_data, Species == "Alewife" & State == "VA")$Location)
+a_VA_n <- length(unique(subset(river_data, Species == "Alewife" & State == "VA")$Location))
+
+```
+
+Mortality estimates from otolith data were available from the James River and `r a_VA[2]`. In the James River, mortality estimates varied over time with no substantial trend and varied from `r format(min(subset(river_data, Species == "Alewife" & State == "VA" & Location == a_VA[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Alewife" & State == "VA" & Location == a_VA[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Alewife" & State == "VA" & Location == a_VA[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z), digits = 2)`/yr (`r figure("MAT-VA-Alewife-AgeOtolith", display = "cite")`). In the `r a_VA[2]` mortality was `r format(subset(river_data, Species == "Alewife" & State == "VA" & Location == a_VA[2] & Year == 2018 & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2018, increased to `r format(subset(river_data, Species == "Alewife" & State == "VA" & Location == a_VA[2] & Year == 2020 & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2020, and then decreased to `r format(subset(river_data, Species == "Alewife" & State == "VA" & Location == a_VA[2] & Year == 2021 & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2021.
 
 ### North Carolina
 
-### South Carolina
+```{r }
+
+a_NC_fd <- unique(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd")$Location)
+a_NC_fd_n <- length(unique(subset(river_data, Species == "Alewife" & State == "NC")$Location))
+
+a_NC_fi <- unique(subset(river_data, Species == "Alewife" & State == "NC_DMF_fi")$Location)
+a_NC_fi_n <- length(unique(subset(river_data, Species == "Alewife" & State == "NC_DMF_fi")$Location))
+
+a_NC_fi_one <- 
+  river_data %>%
+  filter(Species == "Alewife" & State == "NC_DMF_fi" & !is.na(Z)) %>%
+  group_by(Location) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  filter(n == 1) %>%
+  pull(Location)
+  
+
+```
+
+Mortality estimates were available from scale data for the `r a_NC_fi[1]`,  `r a_NC_fi[2]`, `r a_NC_fi[3]`, `r a_NC_fi[4]`, and `r a_NC_fi[5]` from fishery independent data and from the `r a_NC_fd[1]`, `r a_NC_fd[2]`, and `r a_NC_fd[3]` for fishery dependent data. For the fishery independent data there was only one estimate available for the `r a_NC_fi_one[1]`, `r a_NC_fi_one[2]`, `r a_NC_fi_one[3]`, and the `r a_NC_fi_one[4]`. In the `r a_NC_fi[2]` river, mortality varied over time with no strong trends and varied from `r format(min(subset(river_data, Species == "Alewife" & State == "NC_DMF_fi" & Location == a_NC_fi[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Alewife" & State == "NC_DMF_fi" & Location == a_NC_fi[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Alewife" & State == "NC_DMF_fi" & Location == a_NC_fi[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr (`r figure("MAT-NC_DMF_fi-Alewife-AgeScale", display = "cite")`). For fishery dependent data, in the `r a_NC_fd[1]` there was no substantial trend over time from `r subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[1] & !is.na(Z) & Year == min(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[1] & !is.na(Z) & Year < 2000)$Year))$Year` to `r subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[1] & !is.na(Z) & Year == max(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[1] & !is.na(Z) & Year < 2000)$Year))$Year` and the average mortality was `r format(mean(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[1] & !is.na(Z) & Year < 2000)$Z), digits = 2)`/yr (`r figure("MAT-NC_DMF_fd-Alewife-AgeScale", display = "cite")`). In the `r a_NC_fd[2]`, mortality was relatively high during `r subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year == min(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[1] & !is.na(Z) & Year < 2010)$Year))$Year` to `r subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year == max(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year < 2010)$Year))$Year` with an average of `r format(mean(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year < 2010)$Z), digits = 2)`/yr, whereas average mortality was `r format(mean(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year >= 2010)$Z), digits = 2)`/yr during `r subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year == min(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year >= 2010)$Year))$Year` to `r subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year == max(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[2] & !is.na(Z) & Year >= 2010)$Year))$Year`. In the `r a_NC_fd[3]` mortality varied over time from `r format(min(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[3] & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[3] & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Alewife" & State == "NC_DMF_fd" & Location == a_NC_fd[3] & !is.na(Z))$Z), digits = 2)`/yr.
+
+
 
 
 ## Blueback
 
 ### Maine
 
+```{r }
+b_ME <- unique(subset(river_data, Species == "Blueback" & State == "ME")$Location)
+b_ME_n <- length(unique(subset(river_data, Species == "Blueback" & State == "ME")$Location))
+
+```
+
+Mortality estimates were available from scale data for the `r b_ME[1]` River. There were only three estimates and mortality was `r format(max(subset(river_data, Species == "Blueback" & State == "ME" & Location == b_ME[1] & !is.na(Z) & Year == 2021)$Z), digits = 2)`/yr in the most recent year 2021 (`r figure("CAN-NNE-ME-Blueback-AgeScale", display = "cite")`).
+
 ### New Hampshire
+
+```{r }
+b_NH <- unique(subset(river_data, Species == "Blueback" & State == "NH")$Location)
+b_NH_n <- length(unique(subset(river_data, Species == "Blueback" & State == "NH")$Location))
+
+b_NH_one <- 
+  river_data %>%
+  filter(Species == "Blueback" & State == "NH" & !is.na(Z)) %>%
+  group_by(Location) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  filter(n == 2) %>%
+  pull(Location)
+
+b_NH_more_than_one <- setdiff(b_NH, b_NH_one)
+
+```
+
+Mortality estimates from scale data were available from the `r b_NH_one[1]`, `r b_NH_one[2]`, `r b_NH_one[3]`, `r b_NH_one[4]` and `r b_NH_more_than_one[1]`. Only two estimates each were available from the `r b_NH_one[1]`, `r b_NH_one[2]`, `r b_NH_one[3]`, and `r b_NH_one[4]`. Over all four rivers mortality ranged from `r format(min(subset(river_data, Species == "Blueback" & State == "NH" & Location %in% b_NH_one & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Blueback" & State == "NH" & Location %in% b_NH_one & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Blueback" & State == "NH" & Location %in% b_NH_one & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr (`r figure("MNE-NH-Blueback-AgeScale", display = "cite")`). In the `r b_NH_more_than_one`, average mortality was `r format(mean(subset(river_data, Species == "Blueback" & State == "NH" & Location == b_NH_more_than_one & AgeMethod == "AgeScale" & !is.na(Z) & Year <= 2014)$Z), digits = 2)`/yr during 1992-2014 and was slightly lower at `r format(mean(subset(river_data, Species == "Blueback" & State == "NH" & Location == b_NH_more_than_one & AgeMethod == "AgeScale" & !is.na(Z) & Year > 2014)$Z), digits = 2)`/yr during 2016-2021.
+
+### Massachusetts
+
+```{r }
+b_MA_MNE <- unique(subset(river_data, Species == "Blueback" & State == "MA" & Region == "MNE")$Location)
+b_MA_MNE_n <- length(unique(subset(river_data, Species == "Blueback" & State == "ME")$Location))
+
+b_MA_SNE <- unique(subset(river_data, Species == "Blueback" & State == "MA" & Region == "SNE")$Location)
+
+```
+
+Mortality estimates from otolith data were available from the `r b_MA_MNE[1]` River in the Middle New England region and from the `r b_MA_SNE[2]` River and in the Southern New England Region while only mortality estimates from scale data were available from the `r b_MA_SNE[1]` River in the southern New England Region. Mortality estimates from both scale and otolith data were available from the `r b_MA_SNE[3]` River in the Southern New England Region. In the `r b_MA_MNE[1]` River, the only two estimates available were `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_MNE[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z[1], digits = 2)`/yr in 2013 and `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_MNE[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z[2], digits = 2)`/yr in 2016 (`r figure("MNE-MA-Blueback-AgeOtolith", display = "cite")`). In the `r b_MA_SNE[2]` River, the only two estimates available were `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_SNE[2] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year == 2017)$Z, digits = 2)`/yr in 2017 and `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_SNE[2] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year == 2020)$Z, digits = 2)`/yr in 2020 (`r figure("SNE-MA-Blueback-AgeOtolith", display = "cite")`). In the `r b_MA_SNE[1]` River, the only two estimates were `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_SNE[1] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 1985)$Z, digits = 2)`/yr in 1985 and `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_SNE[1] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 1993)$Z, digits = 2)`/yr in 1993 (`r figure("SNE-MA-Blueback-AgeScale", display = "cite")`). The only mortality estimate from otolith data from the `r b_MA_SNE[3]` River was `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_SNE[3] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2020 and for scale data the only estimates were `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_SNE[3] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2007)$Z, digits = 2)`/yr in 2007 and `r format(subset(river_data, Species == "Blueback" & State == "MA" & Location == b_MA_SNE[3] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2008)$Z, digits = 2)`/yr in 2008.
 
 ### Connecticut
 
+```{r }
+b_CT <- unique(subset(river_data, Species == "Blueback" & State == "USFWS")$Location)
+b_CT_n <- length(unique(subset(river_data, Species == "Blueback" & State == "USFWS")$Location))
+
+```
+
+Mortality estimates from otolith data were available from the `r b_CT[1]`, `r b_CT[2]`, and `r b_CT[3]`. In the `r b_CT[1]`, mortality estimates varied and there was no strong trend over time with estimates varying from `r format(min(subset(river_data, Species == "Blueback" & State == "USFWS" & Location == b_CT[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Blueback" & State == "USFWS" & Location == b_CT[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Blueback" & State == "USFWS" & Location == b_CT[1] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z), digits = 2)`/yr (`r figure("MAT-USFWS-Blueback-AgeOtolith", display = "cite")`). In the `r b_CT[2]` there was a slightly decreasing trend over time with a mean mortality of `r format(mean(subset(river_data, Species == "Blueback" & State == "USFWS" & Location == b_CT[2] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year <= 2016)$Z), digits = 2)`/yr (`r figure("MAT-USFWS-Blueback-AgeOtolith", display = "cite")`) during 2013 to 2016 and a slightly lower mean of `r format(mean(subset(river_data, Species == "Blueback" & State == "USFWS" & Location == b_CT[2] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year > 2016)$Z), digits = 2)`/yr from 2017 to 2021. In `r b_CT[3]` there was a slightly decreasing trend over time with a mean mortality of `r format(mean(subset(river_data, Species == "Blueback" & State == "USFWS" & Location == b_CT[3] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year <= 2016)$Z), digits = 2)`/yr during 2013 to 2016 and a slightly lower mean of `r format(mean(subset(river_data, Species == "Blueback" & State == "USFWS" & Location == b_CT[3] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year > 2016)$Z), digits = 2)`/yr from 2017 to 2021.
+
+
 ### New York
 
-### New Jersey
-
-### Delaware
+Mortality estimates from scales and otoliths were available from the Hudson River. There was a decreasing trend in mortality estimates from scale data. Mortality in 2012 was `r format(subset(river_data, Species == "Blueback" & State == "NY" & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2012)$Z, digits = 2)`/yr and declined to `r format(subset(river_data, Species == "Blueback" & State == "NY" & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2018)$Z, digits = 2)`/yr in 2018 (`r figure("MAT-NY-Blueback-AgeScale", display = "cite")`). There was only estimate of `r format(subset(river_data, Species == "Blueback" & State == "NY" & AgeMethod == "AgeOtolith" & !is.na(Z))$Z, digits = 2)`/yr in 2022 for otolith data from the Hudson River (`r figure("MAT-NY-Blueback-AgeOtolith", display = "cite")`).
 
 ### Maryland
 
+```{r }
+b_MD <- unique(subset(river_data, Species == "Blueback" & State == "MD")$Location)
+b_MD_n <- length(unique(subset(river_data, Species == "Blueback" & State == "MD")$Location))
+
+```
+
+Mortality estimates were available from scale data from the `r b_MD[1]` and `r b_MD[2]`. In the `r b_MD[1]` mean mortality during 1989 to 1995 was `r format(mean(subset(river_data, Species == "Blueback" & State == "MD" & Location == b_MD[1] & AgeMethod == "AgeScale" & !is.na(Z) & Year >= 1989 & Year <= 1995)$Z), digits = 2)`/yr and increased to `r format(mean(subset(river_data, Species == "Blueback" & State == "MD" & Location == b_MD[1] & AgeMethod == "AgeScale" & !is.na(Z) & Year >= 2006 & Year <= 2014)$Z), digits = 2)`/yr in 2006 to 2014 and then decreased to `r format(subset(river_data, Species == "Blueback" & State == "MD" & Location == b_MD[1] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2019)$Z, digits = 2)`/yr in 2021 (`r figure("MAT-MD-Blueback-AgeScale", display = "cite")`). In the `r b_MD[2]`, there was a decreasing trend and mortality in 2014 was `r format(subset(river_data, Species == "Blueback" & State == "MD" & Location == b_MD[2] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2014)$Z, digits = 2)`/yr and declined to `r format(subset(river_data, Species == "Blueback" & State == "MD" & Location == b_MD[2] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2021)$Z, digits = 2)`/yr in 2021 (`r figure("MAT-MD-Blueback-AgeScale", display = "cite")`).
+
+
 ### Virginia
+```{r }
+b_VA <- unique(subset(river_data, Species == "Blueback" & State == "VA")$Location)
+b_VA_n <- length(unique(subset(river_data, Species == "Blueback" & State == "VA")$Location))
+
+```
+
+Mortality estimates from otolith data were available from the `r b_VA[1]` and `r b_VA[2]`. In the `r b_VA[1]` there was a decreasing trend over time and mortality was `r format(subset(river_data, Species == "Blueback" & State == "VA" & Location == b_VA[1] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year == 2015)$Z, digits = 2)`/yr in 2015 and declined to `r format(subset(river_data, Species == "Blueback" & State == "VA" & Location == b_VA[1] & AgeMethod == "AgeOtolith" & !is.na(Z) & Year == 2021)$Z, digits = 2)`/yr in 2021 (`r figure("MAT-VA-Blueback-AgeOtolith", display = "cite")`). In the `r b_VA[2]` there was no strong trend over time and mean mortality was `r format(mean(subset(river_data, Species == "Blueback" & State == "VA" & Location == b_VA[2] & AgeMethod == "AgeOtolith" & !is.na(Z))$Z), digits = 2)`/yr during 2018 to 2021.
 
 ### North Carolina
 
+
+```{r }
+
+b_NC_fd <- unique(subset(river_data, Species == "Blueback" & State == "NC_DMF_fd")$Location)
+b_NC_fd_n <- length(unique(subset(river_data, Species == "Blueback" & State == "NC")$Location))
+
+b_NC_fi <- unique(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi")$Location)
+b_NC_fi_n <- length(unique(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi")$Location))
+
+b_NC_fd_three <- 
+  river_data %>%
+  filter(Species == "Blueback" & State == "NC_DMF_fd" & !is.na(Z)) %>%
+  group_by(Location) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  filter(n <= 3) %>%
+  pull(Location)
+  
+
+```
+
+Mortality estimates from scale data were available from the `r b_NC_fi[1]`, `r b_NC_fi[2]`, and `r b_NC_fi[3]` for fishery independent data and from the `r b_NC_fd[1]`, `r b_NC_fd[2]`, `r b_NC_fd[3]`, `r b_NC_fd[4]`, `r b_NC_fd[5]`, `r b_NC_fd[6]`, and `r b_NC_fd[7]`  for fishery dependent data. For fishery independent data, the `r b_NC_fi[1]` and `r b_NC_fi[3]` had only one estimate each of `r format(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi" & Location == b_NC_fi[1] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 1977)$Z, digits = 2)`/yr in 1977 and `r format(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi" & Location == b_NC_fi[3] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 1999)$Z, digits = 2)`/yr in 1999, respectively (`r figure("MAT-NC_DMF_fi-Blueback-AgeScale", display = "cite")`). Mortality in the `r b_NC_fi[2]` increased from `r format(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi" & Location == b_NC_fi[2] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 1983)$Z, digits = 2)`/yr in 1983 to `r format(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi" & Location == b_NC_fi[2] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 2009)$Z, digits = 2)`/yr in 2009. 
+
+For fishery dependent data, the `r b_NC_fd_three[1]`, `r b_NC_fd_three[2]`, `r b_NC_fd_three[3]`, `r b_NC_fd_three[4]`, and `r b_NC_fd_three[5]` all had less than three estimates and among all these rivers, mortality ranged from `r format(min(subset(river_data, Species == "Blueback" & State == "NC_DMF_fd" & Location %in% b_NC_fd_three & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Blueback" & State == "NC_DMF_fd" & Location %in% b_NC_fd_three & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Blueback" & State == "NC_DMF_fd" & Location %in% b_NC_fd_three & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr (`r figure("MAT-NC_DMF_fd-Blueback-AgeScale", display = "cite")`). In the `r b_NC_fd[2]`, there was some variation over time but no strong trend and the mean mortality from 1972 to 2021 was `r format(mean(subset(river_data, Species == "Blueback" & State == "NC_DMF_fd" & Location %in% b_NC_fd[2] & AgeMethod == "AgeScale" & !is.na(Z))$Z), digits = 2)`/yr. In the `r b_NC_fd[6]`, there was a decreasing trend from 1972 to 1991 when mortality declined from `r format(subset(river_data, Species == "Blueback" & State == "NC_DMF_fd" & Location == b_NC_fd[6] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 1972)$Z, digits = 2)`/yr to `r format(subset(river_data, Species == "Blueback" & State == "NC_DMF_fd" & Location == b_NC_fd[6] & AgeMethod == "AgeScale" & !is.na(Z) & Year == 1991)$Z, digits = 2)`/yr.
+
 ### South Carolina
 
+```{r }
+
+b_SC_fd <- unique(subset(river_data, Species == "Blueback" & State == "SC_fd")$Location)
+# b_SC_fd_n <- length(unique(subset(river_data, Species == "Blueback" & State == "NC")$Location))
+
+# b_SC_fd_s <- unique(subset(river_data, Species == "Blueback" & State == "SC_fd")$Location)
+
+b_SC_rec <- unique(subset(river_data, Species == "Blueback" & State == "SC_rec")$Location)
+
+# b_NC_fi <- unique(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi")$Location)
+# b_NC_fi_n <- length(unique(subset(river_data, Species == "Blueback" & State == "NC_DMF_fi")$Location))
+
+  
+
+```
+
+Mortality estimates from scale data were available from the `r b_SC_fd[1]`, `r b_SC_fd[2]` River, `r b_SC_rec[1]`, and `r b_SC_rec[2]` from fishery dependent data. For scale data, there was only one estimate available each from the `r b_SC_fd[2]` River, `r b_SC_rec[1]`, and `r b_SC_rec[2]` (`r figure("SAT-SC_fd-Blueback-AgeScale", display = "cite")`; `r figure("SAT-SC_rec-Blueback-AgeScale", display = "cite")`). For the `r b_SC_fd[1]` river there was no strong trend over time and mortality estimates ranged from `r format(min(subset(river_data, Species == "Blueback" & State == "SC_fd" & AgeMethod == "AgeScale" & !is.na(Z) & Location == b_SC_fd[1])$Z), digits = 2)`/yr to `r format(max(subset(river_data, Species == "Blueback" & State == "SC_fd" & AgeMethod == "AgeScale" & !is.na(Z) & Location == b_SC_fd[1])$Z), digits = 2)`/yr with a mean of `r format(mean(subset(river_data, Species == "Blueback" & State == "SC_fd" & AgeMethod == "AgeScale" & !is.na(Z) & Location == b_SC_fd[1])$Z), digits = 2)`/yr (`r figure("SAT-SC_fd-Blueback-AgeScale", display = "cite")`). For otolith data there was only estimate of `r format(min(subset(river_data, Species == "Blueback" & State == "SC_fd" & AgeMethod == "AgeOtolith" & !is.na(Z) & Location == b_SC_fd[1])$Z), digits = 2)`/yr in 2021 from the `r b_SC_fd[1]` (`r figure("SAT-SC_fd-Blueback-AgeOtolith", display = "cite")`).  
+\newline  
 
 
 __References__

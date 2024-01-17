@@ -1,6 +1,7 @@
 
 
-bookdown::render_book("index.Rmd", "officedown::rdocx_document")
+bookdown::render_book("index.Rmd", "officedown::rdocx_document",
+                      output_file = "RiverHerringZ.docx")
 
 
 # bookdown::render_book("index.Rmd", "bookdown::word_document2")

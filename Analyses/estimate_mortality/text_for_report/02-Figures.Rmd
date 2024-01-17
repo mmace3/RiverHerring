@@ -1,6 +1,9 @@
 
 ```{r regionplots, }
 
+# if = 0 no titles and if not then not titles on plots
+add_title <- 0
+
 my_breaks_a <- c(min(region_data$Year, na.rm = TRUE):max(region_data$Year, na.rm = TRUE))
 my_breaks <- ifelse(my_breaks_a %% 10 == 0, my_breaks_a, "")
 my_breaks <- c(1980, 1990, 2000, 2010, 2020)
@@ -14,15 +17,15 @@ for(i in unique(region_data$ID))
 
   sub_data <- subset(region_data, ID == i)
 
-  # sub_species <- unique(sub_data$Species)
-  # sub_region <- unique(sub_data$Region)
+  sub_species <- unique(sub_data$Species)
+  sub_region <- unique(sub_data$Region)
   # sub_agemethod <- unique(sub_data$AgeMethod)
 
   # title_temp <- paste(sub_region, sub_species, sub_agemethod, sep = " ")
   title_temp <- unique(sub_data$Region_Species_AgeMethod)
   my_labels <- ifelse(my_breaks_a %% 10 == 0, my_breaks_a, "")
   my_labels <- as.character(my_breaks)
-  # Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+  Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
 
   zplot <-
     ggplot(sub_data, aes(x = Year, y = Z)) +
@@ -32,16 +35,30 @@ for(i in unique(region_data$ID))
     scale_x_continuous(breaks = my_breaks,
                        labels = my_labels) +
     labs(y = "Z (Instantaneous mortality rate)",
-         x = "",
-         title = title_temp) +
-    # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+         x = "" #,
+         # title = title_temp
+         ) +
+    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
     theme_bw()
 
   # print(zplot)
 
    
   zplot_smoother <- zplot + geom_smooth(se = FALSE)
-  region_plots[[i]] <- zplot_smoother
+  
+
+  if(add_title == 1)
+    {
+        zplot_title <- zplot_smoother + labs(title = title_temp)
+        region_plots[[i]] <- zplot_title
+        
+    } else 
+      
+      {
+        region_plots[[i]] <- zplot_smoother
+      }
+    
+  
   names(region_plots)[i] <- title_temp
   # plot(zplot_smoother)
 
@@ -54,7 +71,7 @@ for(i in unique(region_data$ID))
 
 
 
-```{r, fig.width = 8, fig.height = 8}
+```{r NNE-Alewife-plot, fig.width = 8, fig.height = 8}
 
 plot_grid(region_plots[["NNE_Alewife_AgeScale"]], 
           NULL, 
@@ -65,20 +82,27 @@ plot_grid(region_plots[["NNE_Alewife_AgeScale"]],
 
 ```
 
+`r figure("NNE-Alewife-plot", caption = "Age-based estimates of total instantaneous mortality for alewife from the Northern New England region of the United States. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the given region.")`
 
 \newpage
-```{r, fig.width = 6.2, fig.height = 6.2}
+
+```{r MAT_Alewife_AgeScale, fig.width = 6.2, fig.height = 6.2, cache = TRUE}
+
 
 plot_grid(region_plots[["MAT_Alewife_AgeScale"]],
           region_plots[["MAT_Alewife_AgeOtolith"]],
           region_plots[["SNE_Alewife_AgeScale"]],
           region_plots[["SNE_Alewife_AgeOtolith"]],
-          nrow = 2)
+          labels = c("A)", "B)", "C)", "D)"),
+          nrow = 2,
+          hjust = 0)
 
 ```
 
+`r figure("SNE-MAT-Alewife-plot", caption = "Age-based estimates of total instantaneous mortality for alewife from Mid-Atlantic region using (A) scales and (B) ototliths and the Southern New England region using (C) scales and (D) otoliths. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the given region.")`
+
 \newpage
-```{r, fig.width = 6.2, fig.height = 6.2}
+```{r CAN-NNE_Blueback_AgeScale, fig.width = 6.2, fig.height = 6.2, cache = TRUE}
 
 plot_grid(region_plots[["CAN-NNE_Blueback_AgeScale"]],
           NULL,
@@ -87,29 +111,37 @@ plot_grid(region_plots[["CAN-NNE_Blueback_AgeScale"]],
           nrow = 2)
 ```
 
+`r figure("CAN-NNE_Blueback_AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback from the Canadian-Northern New England region. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the given region.")`
 
-
-```{r, fig.width = 6.2, fig.height = 6.2}
+```{r, fig.width = 6.2, fig.height = 6.2, cache = TRUE}
 
 plot_grid(region_plots[["MNE_Blueback_AgeScale"]],
           region_plots[["MNE_Blueback_AgeOtolith"]],
           region_plots[["SNE_Blueback_AgeScale"]],
           region_plots[["SNE_Blueback_AgeOtolith"]],
-          nrow = 2)
+          labels = c("A)", "B)", "C)", "D)"),
+          nrow = 2,
+          hjust = 0)
 ```
 
+`r figure("MNE-SNE-Blueback-plot", caption = "Age-based estimates of total instantaneous mortality for blueback from the Middle New England region using (A) scales and (B) otoliths and the Southern New England region using (C) scales and (D) otoliths. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the given region.")`
 
-```{r, fig.width = 6.2, fig.height = 6.2}
+```{r, fig.width = 6.2, fig.height = 6.2, cache = TRUE}
 
 plot_grid(region_plots[["MAT_Blueback_AgeScale"]],
           region_plots[["MAT_Blueback_AgeOtolith"]],
           region_plots[["SAT_Blueback_AgeScale"]],
           region_plots[["SAT_Blueback_AgeOtolith"]],
-          nrow = 2)
+          labels = c("A)", "B)", "C)", "D)"),
+          nrow = 2,
+          hjust = 0)
 ```
 
+`r figure("MAT-SAT-Blueback-plot", caption = "Age-based estimates of total instantaneous mortality for blueback from the Mid-Atlantic region using (A) scales and (B) otoliths and the South Atlantic region using (C) scales and (D) otoliths. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the given region.")`
 
-```{r riverplots}
+
+```{r riverplots, eval = FALSE}
+
 
 
 my_breaks <- c(min(river_data$Year, na.rm = TRUE):max(river_data$Year, na.rm = TRUE))
@@ -137,7 +169,7 @@ for(i in unique(river_data$ID))
 
   my_labels <- ifelse(my_breaks %% 10 == 0, my_breaks, "")
 
-  # Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+  Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
 
   zplot <-
     ggplot(sub_data, aes(x = Year, y = Z)) +
@@ -147,24 +179,355 @@ for(i in unique(river_data$ID))
     scale_x_continuous(breaks = my_breaks,
                        labels = my_labels) +
     labs(y = "Z (Instantaneous mortality rate)",
-         x = "",
-         title = title_temp) +
-    # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+         x = ""# ,
+         # title = title_temp
+         ) +
+    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
     facet_wrap(~Location
     ) +
-    theme_bw() 
+    # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   zplot_smoother <- zplot + geom_smooth(se = FALSE)
-  river_plots[[i]] <- zplot_smoother
-  names(river_plots)[i] <- title_temp
+  # river_plots[[i]] <- zplot_smoother
+  
   # print(zplot)
+    if(add_title == 1)
+    {
+        zplot_title <- zplot_smoother + labs(title = title_temp)
+        river_plots[[i]] <- zplot_title
+        
+    } else 
+      
+      {
+        river_plots[[i]] <- zplot_smoother
+      }
 
+   names(river_plots)[i] <- title_temp
 }
 # dev.off()
 
+
+# Just Maine plot for Alewife to split into smaller figures instead of 36 total
+# plots
+
+ME_Alewife_AgeScale <- subset(river_data, Species == "Alewife" & State == "ME" &
+                                AgeMethod == "AgeScale")
+
+ME_Alewife_AgeScale_Two <-
+  ME_Alewife_AgeScale %>%
+  # filter(!is.na(Z)) %>%
+  mutate(NotNA = if_else(!is.na(Z), 1, 0)) %>%
+  group_by(Location) %>%
+  mutate(sum_NotNA = sum(NotNA)) %>%
+  ungroup() %>%
+  filter(sum_NotNA <= 2)
+
+# Plot for locations that have only 1 or 2 estimates
+Z_spr_temp_ME_plot_A <- subset(Z_spr, Species == "Alewife" & Region == "NNE")$Z40
+
+ME_plot_A <-
+    ggplot(ME_Alewife_AgeScale_Two, aes(x = Year, y = Z)) +
+    geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
+    geom_point(size = 2) +
+    coord_cartesian(ylim = c(0, 3)) +
+    scale_x_continuous(breaks = my_breaks,
+                       labels = my_labels) +
+    labs(y = "Z (Instantaneous mortality rate)",
+         x = "",
+         title = "NNE ME AleWife AgeScale") +
+    geom_hline(yintercept = Z_spr_temp_ME_plot_A, linetype = "dashed", color = "black") +
+    facet_wrap(~Location
+    ) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plots for locations that have more than 2 estimates
+ME_plot_B <-
+  ME_Alewife_AgeScale %>%
+  filter(!Location %in% unique(ME_Alewife_AgeScale_Two$Location)) %>%
+  
+  ggplot(aes(x = Year, y = Z)) +
+  geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
+  geom_point(size = 2) +
+  coord_cartesian(ylim = c(0, 3)) +
+  scale_x_continuous(breaks = my_breaks,
+                       labels = my_labels) +
+  labs(y = "Z (Instantaneous mortality rate)",
+         x = "",
+         title = "NNE ME AleWife AgeScale") +
+  geom_hline(yintercept = Z_spr_temp_ME_plot_A, linetype = "dashed", color = "black") +
+  facet_wrap(~Location
+    ) +
+    theme_bw() +
+    geom_smooth(se = FALSE) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ```
 
 
 
+
+
+```{r NNE-ME-Alewife-AgeScale_A, cache = TRUE, fig.width = 9, fig.height = 9}
+
+# plot_grid(river_plots[["CAN-NNE ME Blueback AgeScale"]], 
+#           NULL, 
+#           NULL, 
+#           NULL,
+#           nrow = 2)
+# river_plots[["NNE ME Alewife AgeScale"]]
+
+ME_plot_A
+
+```
+
+`r figure("ME_plot_A", caption = "Age-based estimates of total instantaneous mortality for alewife (from scale data) in Maine by river and year, for rivers that each had only one or two total estimates. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r NNE-ME-Alewife-AgeScale_B, cache = TRUE, fig.width = 9, fig.height = 9}
+
+# plot_grid(river_plots[["CAN-NNE ME Blueback AgeScale"]], 
+#           NULL, 
+#           NULL, 
+#           NULL,
+#           nrow = 2)
+# river_plots[["NNE ME Alewife AgeScale"]]
+
+ME_plot_B
+
+```
+
+`r figure("ME_plot_B", caption = "Age-based estimates of total instantaneous mortality for alewife (from scale data) in Maine by river and year, for rivers that each had more than two total estimates. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r NNE-NH-Alewife-AgeScale, cache = TRUE, fig.width = 6, fig.height = 6}
+
+# plot_grid(river_plots[["CAN-NNE ME Blueback AgeScale"]], 
+#           NULL, 
+#           NULL, 
+#           NULL,
+#           nrow = 2)
+river_plots[["NNE NH Alewife AgeScale"]]
+
+```
+
+`r figure("NNE-NH-Alewife-AgeScale", caption = "Age-based estimates of total instantaneous mortality for alewife (from scale data) in New Hampshire by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SNE-MA-Alewife-AgeScale, cache = TRUE, fig.width = 6, fig.height = 6}
+
+river_plots[["SNE MA Alewife AgeScale"]]
+
+```
+
+`r figure("SNE-MA-Alewife-AgeScale", caption = "Age-based estimates of total instantaneous mortality for alewife (from scale data) in Massachusetts by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SNE-MA-Alewife-AgeOtolith, cache = TRUE, fig.width = 6, fig.height = 6}
+
+river_plots[["SNE MA Alewife AgeOtolith"]]
+
+```
+
+`r figure("SNE-MA-Alewife-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for alewife (from otolith data) in Massachusetts by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SNE-RI-Alewife-AgeScale, cache = TRUE}
+
+river_plots[["SNE RI Alewife AgeScale"]]
+
+```
+
+`r figure("SNE-RI-Alewife-AgeScale", caption = "Age-based estimates of total instantaneous mortality for alewife (from scale data) in Rhode Island by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NY-Alewife-AgeScale, cache = TRUE}
+river_plots[["MAT NY Alewife AgeScale"]]
+```
+
+`r figure("MAT-NY-Alewife-AgeScale", caption = "Age-based estimates of total instantaneous mortality for alewife (from scale data) in New York by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NY-Alewife-AgeOtolith, cache = TRUE}
+river_plots[["MAT NY Alewife AgeOtolith"]]
+```
+
+`r figure("MAT-NY-Alewife-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for alewife (from otolith data) in New York by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-MD-Alewife-AgeScale, cache = TRUE}
+river_plots[["MAT MD Alewife AgeScale"]]
+```
+
+`r figure("MAT-MD-Alewife-AgeScale", caption = "Age-based estimates of total instantaneous mortality for alewife (from scale data) in Maryland by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-SERC-Alewife-AgeOtolith, cache = TRUE}
+river_plots[["MAT SERC Alewife AgeOtolith"]]
+```
+
+`r figure("MAT-SERC-Alewife-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for alewife (from otolith data) in Maryland by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-VA-Alewife-AgeOtolith, cache = TRUE}
+river_plots[["MAT VA Alewife AgeOtolith"]]
+```
+
+`r figure("MAT-VA-Alewife-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for alewife (from otolith data) in Virginia by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NC_DMF_fi-Alewife-AgeScale, cache = TRUE, fig.width = 6, fig.height = 6}
+river_plots[["MAT NC_DMF_fi Alewife AgeScale"]]
+```
+
+`r figure("MAT-NC_DMF_fi-Alewife-AgeScale", caption = "Age-based estimates of total instantaneous mortality for alewife (from fishery independent scale data) in North Carolina by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NC_DMF_fd-Alewife-AgeScale, cache = TRUE}
+river_plots[["MAT NC_DMF_fd Alewife AgeScale"]]
+```
+
+`r figure("MAT-NC_DMF_fd-Alewife-AgeScale", caption = "Age-based estimates of total instantaneous mortality for alewife (from fishery dependent scale data) in North Carolina by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+
+```{r CAN-NNE-ME-Blueback-AgeScale, cache = TRUE}
+
+# plot_grid(river_plots[["CAN-NNE ME Blueback AgeScale"]], 
+#           NULL, 
+#           NULL, 
+#           NULL,
+#           nrow = 2)
+river_plots[["CAN-NNE ME Blueback AgeScale"]]
+
+```
+
+`r figure("CAN-NNE-ME-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from scale data) in Maine by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MNE-NH-Blueback-AgeScale, cache = TRUE, fig.width = 6, fig.height = 6}
+river_plots[["MNE NH Blueback AgeScale"]]
+```
+
+`r figure("MNE-NH-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from scale data) in New Hampshire by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MNE-MA-Blueback-AgeOtolith, cache = TRUE}
+river_plots[["MNE MA Blueback AgeOtolith"]]
+```
+
+`r figure("MNE-MA-Blueback-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for blueback (from otolith data) in Massachusetts (Middle New England Region) by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SNE-MA-Blueback-AgeOtolith, cache = TRUE}
+river_plots[["SNE MA Blueback AgeOtolith"]]
+```
+
+`r figure("SNE-MA-Blueback-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for blueback (from otolith data) in Massachusetts (Southern New England Region) by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SNE-MA-Blueback-AgeScale, cache = TRUE}
+river_plots[["SNE MA Blueback AgeScale"]]
+```
+
+`r figure("SNE-MA-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from scale data) in Massachusetts (Southern New England Region) by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-USFWS-Blueback-AgeOtolith, }
+river_plots[["MAT USFWS Blueback AgeOtolith"]]
+```
+
+`r figure("MAT-USFWS-Blueback-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for blueback (from otolith data) in Connecticut by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NY-Blueback-AgeScale, cache = TRUE}
+river_plots[["MAT NY Blueback AgeScale"]]
+```
+
+`r figure("MAT-NY-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from scale data) in New York by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NY-Blueback-AgeOtolith, cache = TRUE}
+river_plots[["MAT NY Blueback AgeOtolith"]]
+```
+
+`r figure("MAT-NY-Blueback-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for blueback (from otolith data) in New York by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-MD-Blueback-AgeScale, cache = TRUE}
+river_plots[["MAT MD Blueback AgeScale"]]
+```
+
+`r figure("MAT-MD-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from scale data) in Maryland by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-VA-Blueback-AgeOtolith, cache = TRUE}
+river_plots[["MAT VA Blueback AgeOtolith"]]
+```
+
+`r figure("MAT-VA-Blueback-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for blueback (from otolith data) in Virginia by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NC_DMF_fi-Blueback-AgeScale, cache = TRUE}
+river_plots[["MAT NC_DMF_fi Blueback AgeScale"]]
+```
+
+`r figure("MAT-NC_DMF_fi-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from fishery independent scale data) in North Carolina by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r MAT-NC_DMF_fd-Blueback-AgeScale, cache = TRUE, fig.width = 6, fig.height = 6}
+river_plots[["MAT NC_DMF_fd Blueback AgeScale"]]
+```
+
+`r figure("MAT-NC_DMF_fd-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from fishery dependent scale data) in North Carolina by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SAT-SC_fd-Blueback-AgeScale, cache = TRUE}
+river_plots[["SAT SC_fd Blueback AgeScale"]]
+```
+
+`r figure("SAT-SC_fd-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from fishery dependent scale data) in South Carolina by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SAT-SC_rec-Blueback-AgeScale, cache = TRUE}
+river_plots[["SAT SC_rec Blueback AgeScale"]]
+```
+
+`r figure("SAT-SC_rec-Blueback-AgeScale", caption = "Age-based estimates of total instantaneous mortality for blueback (from recreational fishery dependent scale data) in South Carolina by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`
+
+\newpage
+
+```{r SAT-SC_fd-Blueback-AgeOtolith, cache = TRUE}
+river_plots[["SAT SC_fd Blueback AgeOtolith"]]
+```
+
+`r figure("SAT-SC_fd-Blueback-AgeOtolith", caption = "Age-based estimates of total instantaneous mortality for blueback (from fishery dependent otolith data) in South Carolina by river and year. Blues lines are loess fits to indicate trends. Error bars are 95% confidence intervals and the dotted line is the Z~40%~ reference point for the region where these rivers are located.")`

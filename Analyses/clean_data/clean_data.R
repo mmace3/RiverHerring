@@ -25,6 +25,10 @@
 # read in data from Katie Drew that has regions for each record. Use this to
 # assign regions for my data set.
 
+# 16 Jan 2024
+# read in New Hampshire data from Katie Drew and use her NH data instead of
+# my NH data (see below)
+
 #-------------------------------------------------------------------------------
 # Load Packages, set options
 #-------------------------------------------------------------------------------
@@ -122,6 +126,63 @@ NY_new <-
   updated_NY_BBH %>%
   bind_rows(updated_NY_ALE)
 
+# 16 Jan 2024
+# Update data sets from Katie Drew to include new New Hampshire age data. She
+# used age length keys to determine the age of NH samples that only had length
+# data originally. I will replace my NH data with NH data from her updated
+# data set.
+
+# updated alewife data for New Hampshire
+
+ALE_NH <- read.csv("data/ALE_biodata_for_Z_01-12-24.csv",
+                header = TRUE,
+                colClasses = c("integer", # Year
+                               "character", # Region
+                               "character", # State
+                               "character", # River
+                               "character", # Sex
+                               "numeric", # Fork.Length
+                               "numeric", # Total.Length
+                               "numeric", # weight
+                               "numeric", # Scale.Age
+                               "numeric", # Oto.Age
+                               "numeric", # RPS
+                               "character", # Maturity
+                               "character", # Data.Source
+                               "character" # Age.Type
+                )) %>%
+          filter(State == "NH") %>%
+          mutate(Species = "Alewife") %>%
+          select(State, Location = River, Species, AgeScale = Scale.Age,
+                 AgeOtolith = Oto.Age, ForkLength = Fork.Length,
+                 TotalLength = Total.Length, Weight, Sex, RepeatSpawn = RPS,
+                 Region, Year)
+
+# updated blueback data for New Hamphshire
+
+BBH_NH <- read.csv("data/BBH_biodata_for_Z_01-12-24.csv",
+                header = TRUE,
+                colClasses = c("integer", # Year
+                               "character", # Region
+                               "character", # State
+                               "character", # River
+                               "character", # Sex
+                               "numeric", # Fork.Length
+                               "numeric", # Total.Length
+                               "numeric", # weight
+                               "numeric", # Scale.Age
+                               "numeric", # Oto.Age
+                               "numeric", # RPS
+                               "character", # Maturity
+                               "character", # Data.Source
+                               "character" # Age.Type
+                )) %>%
+          filter(State == "NH") %>%
+          mutate(Species = "Blueback") %>%
+          select(State, Location = River, Species, AgeScale = Scale.Age,
+                 AgeOtolith = Oto.Age, ForkLength = Fork.Length,
+                 TotalLength = Total.Length, Weight, Sex, RepeatSpawn = RPS,
+                 Region, Year)
 
 #-------------------------------------------------------------------------------
 # Want to create data set that combines data from all states into one file.
@@ -1692,7 +1753,7 @@ AllStates <-
   bind_rows(ME_new) %>%
   # bind_rows(ME) %>%
   bind_rows(NC) %>%
-  bind_rows(NH) %>%
+  # bind_rows(NH) %>%
   # bind_rows(NY) %>%
   bind_rows(NY_new) %>%
   bind_rows(PA) %>%
@@ -1733,6 +1794,9 @@ AllStates <-
   mutate(Year = as.integer(format(Date, format= "%Y"))) %>%
   mutate(Location = if_else(State == "NC_WRC" & is.na(Location) & is.na(Region), "Neuse River", Location)) %>%
   mutate(Region = if_else(State == "NC_WRC" & is.na(Region), "MAT", Region)) %>%
+  select(-Date) %>%
+  bind_rows(ALE_NH) %>%
+  bind_rows(BBH_NH) %>%
   filter(AgeScale < 20 | is.na(AgeScale)) # get rid of 100 records with age of 99
 
 

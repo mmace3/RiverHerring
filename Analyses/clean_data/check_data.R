@@ -27,13 +27,13 @@ library(readxl)
 # New data sets from Katie Drew
 
 # Alewife data
-ALE_new <- read.csv("data/ALE_biodata_09-11-23.csv",
+ALE_new <- read.csv("data/ALE_biodata_for_Z_01-12-24.csv",
                     header = TRUE) %>%
   mutate(Species = "Alewife")
 
 
 # Blue back herring data
-BBH_new <- read.csv("data/BBh_biodata_09-11-23.csv",
+BBH_new <- read.csv("data/BBH_biodata_for_Z_01-12-24.csv",
                 header = TRUE) %>%
   mutate(Species = "Blueback")
 
@@ -61,7 +61,7 @@ my_clean_data <- read.csv("clean_data.csv",
                  filter(Species != "unknown")
 
 # old cleaned data set
-my_clean_data_old <- read.csv("clean_data_old.csv",
+my_clean_data_old <- read.csv("clean_data_old_b.csv",
                               header = TRUE)
 
 
@@ -74,18 +74,18 @@ my_clean_data_old <- read.csv("clean_data_old.csv",
 
 # Otolith ages
 
-my_StSpAge <-
+my_StSpAge_Otolith <-
   my_clean_data %>%
   group_by(State, Species, AgeOtolith) %>%
   summarize(n = n()) %>%
   ungroup()
 
-StateSpeciesAge <-
+StateSpeciesAge_Otolith <-
   k_clean_data_new %>%
   group_by(State, Species, AgeOtolith) %>%
   summarize(n = n()) %>%
   ungroup() %>%
-  full_join(my_StSpAge, by = c("State", "Species", "AgeOtolith")) %>%
+  full_join(my_StSpAge_Otolith, by = c("State", "Species", "AgeOtolith")) %>%
   rename(Mydata = n.y) %>%
   rename(Katiedata = n.x) %>%
   mutate(diff = Mydata - Katiedata) %>%
@@ -94,18 +94,18 @@ StateSpeciesAge <-
 
 # Scale ages
 
-my_StSpAge <-
+my_StSpAge_Scale_Scale <-
   my_clean_data %>%
   group_by(State, Species, AgeScale) %>%
   summarize(n = n()) %>%
   ungroup()
 
-StateSpeciesAge <-
+StateSpeciesAge_Scale <-
   k_clean_data_new %>%
   group_by(State, Species, AgeScale) %>%
   summarize(n = n()) %>%
   ungroup() %>%
-  full_join(my_StSpAge, by = c("State", "Species", "AgeScale")) %>%
+  full_join(my_StSpAge_Scale_Scale, by = c("State", "Species", "AgeScale")) %>%
   rename(Mydata = n.y) %>%
   rename(Katiedata = n.x) %>%
   mutate(diff = Mydata - Katiedata)%>%
@@ -118,18 +118,18 @@ StateSpeciesAge <-
 # Now compare numbers at age by species, state, and region
 
 # Otolith ages
-my_RStSpAge <-
+my_RStSpAge_Otolith <-
   my_clean_data %>%
   group_by(Region, State, Species, AgeOtolith) %>%
   summarize(n = n()) %>%
   ungroup()
 
-RegionStateSpeciesAge <-
+RegionStateSpeciesAge_Otolith <-
   k_clean_data_new %>%
   group_by(Region, State, Species, AgeOtolith) %>%
   summarize(n = n()) %>%
   ungroup() %>%
-  full_join(my_RStSpAge, by = c("Region", "State", "Species", "AgeOtolith")) %>%
+  full_join(my_RStSpAge_Otolith, by = c("Region", "State", "Species", "AgeOtolith")) %>%
   # mutate(diff = n.y - n.x) %>%
   rename(Mydata = n.y) %>%
   rename(Katiedata = n.x) %>%
@@ -137,18 +137,18 @@ RegionStateSpeciesAge <-
   filter(!is.na(AgeOtolith))
 
 # Scale Ages
-my_RStSpAge <-
+my_RStSpAge_Scale <-
   my_clean_data %>%
   group_by(Region, State, Species, AgeScale) %>%
   summarize(n = n()) %>%
   ungroup()
 
-RegionStateSpeciesAge <-
+RegionStateSpeciesAge_Scale <-
   k_clean_data_new %>%
   group_by(Region, State, Species, AgeScale) %>%
   summarize(n = n()) %>%
   ungroup() %>%
-  full_join(my_RStSpAge, by = c("Region", "State", "Species", "AgeScale")) %>%
+  full_join(my_RStSpAge_Scale, by = c("Region", "State", "Species", "AgeScale")) %>%
   #mutate(diff = n.y - n.x)
   rename(Mydata = n.y) %>%
   rename(Katiedata = n.x) %>%
@@ -157,6 +157,26 @@ RegionStateSpeciesAge <-
   filter(AgeScale != 99)
 
 
+
+# Include check on difference columns in above data sets to see if any differences.
+# Should also manually inspect above data sets just to make sure no weird things
+# going on.
+StateSpeciesAge_Otolith_check <- sum(StateSpeciesAge_Otolith$diff, na.rm = TRUE) == 0
+StateSpeciesAge_Scale_check <- sum(StateSpeciesAge_Scale$diff, na.rm = TRUE) == 0
+
+RegionStateSpeciesAge_Otolith_check <- sum(RegionStateSpeciesAge_Otolith$diff, na.rm = TRUE) == 0
+RegionStateSpeciesAge_Scale_check <- sum(RegionStateSpeciesAge_Scale$diff, na.rm = TRUE) == 0
+
+if(any(c(StateSpeciesAge_Otolith_check,
+         StateSpeciesAge_Scale_check,
+         RegionStateSpeciesAge_Otolith_check,
+         RegionStateSpeciesAge_Scale_check) != TRUE))
+  {
+    print("Check totals! There is a difference between the data sets.")
+  } else
+    {
+      print("No differences between data sets.")
+    }
 
 #-------------------------------------------------------------------------------
 

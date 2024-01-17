@@ -1,11 +1,15 @@
 The files in this directory contain total mortality estimates for river herring
 that were estimated as part of the 2023 Benchmark Stock Assessment through the
+ASFMC. (These files with the estimates will eventually be put up on github)
+
+This directory also contains files that have code that was used to estimate
+total mortality for the 2023 Benchmark Stock Assessment through the
 ASFMC.
 
 Code used to calculate estimates is available at:
 https://github.com/mmace3/RiverHerring/tree/main/Analyses/estimate_mortality
 
-There are 6 files in this directory.
+There are 6 data files in this directory (not added to github yet).
 
 Each file has up to 10 columns:
 
@@ -43,7 +47,12 @@ Zestimates_by_cohort_by_river.csv
     total mortality estimates calculated by following cohorts over time.
     Estimates are by river, year, and species
 
+The files that contain code to estimate mortality are:
 
+estimate_mortality.R
+estimate_mortality_cohort.R
+plot_mortality.R
+plot_mortality_cohort.R
 
 NOTES:
 

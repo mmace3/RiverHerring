@@ -1,3 +1,21 @@
+The files in this directory contain code for cleaning data that is 
+subsequently used for estimating total mortality for river herring 
+as part of the 2023 Benchmark Stock Assessment through the ASFMC.
+
+There are 2 files in this directory:
+
+check_data.R
+  This file checks the data file created in clean_data.R against
+  the data files created by Katie Drew to make sure the numbers
+  at age are the same between the files. We both wrote code to
+  create a clean data set from the raw data sets.
+clean_data.R
+  This file contains code to take the raw data and return a cleaned
+  data file that can be used in subesequent analyses.
+
+
+
+Notes:
 clean_data_old_a is a file with the clean data I was using for the Z estimates before I got
 updated from Wes for NY and I switched to using the Maine data that Katie compiled. The
 Maine data Katie compiled has the specific rivers listed and not grouped together. The

@@ -16,14 +16,16 @@ clean_data.R
 
 
 Notes:
-clean_data_old_a is a file with the clean data I was using for the Z estimates before I got
+.csv files are not uploaded to github yet. Will be done after peer review is complete.
+
+clean_data_old_a.csv is a file with the clean data I was using for the Z estimates before I got
 updated from Wes for NY and I switched to using the Maine data that Katie compiled. The
 Maine data Katie compiled has the specific rivers listed and not grouped together. The
 updated NY data from Wes has some additional data from recent years.
 
 
 17 Jan 2024
-clean_data_old_b is a file with clean data I was using after clean_data_old_a (see above).
+clean_data_old_b.csv is a file with clean data I was using after clean_data_old_a.csv (see above).
 The newest update for clean_data now has modified New Hampshire data. I took the NH
 data compiled by Katie and added it to my data and removed my NH data. She added in
 more ages by using an age-length key to convert records with only lengths to ages. This

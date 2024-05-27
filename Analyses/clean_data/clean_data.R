@@ -74,6 +74,9 @@ updated_NY_BBH <- read_excel("data/Updated_NY_BBH_biodata_09_07_23.xlsx",
                   mutate(Species = "Blueback") %>%
                   mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
                                            format="%Y-%m-%d")) %>%
+                  mutate(Sex = if_else(Sex == "Male", "male",
+                       if_else(Sex == "Female", "female",
+                               "unknown"))) %>%
                   select(State,
                          Date,
                          Location = River,
@@ -109,6 +112,9 @@ updated_NY_ALE <- read_excel("data/Updated_NY_ALE_biodata_09_07_23.xlsx",
                   mutate(Species = "Alewife") %>%
                   mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
                                            format="%Y-%m-%d")) %>%
+                  mutate(Sex = if_else(Sex == "Male", "male",
+                       if_else(Sex == "Female", "female",
+                               "unknown"))) %>%
                   select(State,
                          Date,
                          Location = River,
@@ -156,7 +162,17 @@ ALE_NH <- read.csv("data/ALE_biodata_for_Z_01-12-24.csv",
           select(State, Location = River, Species, AgeScale = Scale.Age,
                  AgeOtolith = Oto.Age, ForkLength = Fork.Length,
                  TotalLength = Total.Length, Weight, Sex, RepeatSpawn = RPS,
-                 Region, Year)
+                 Region, Year) %>%
+          mutate(Sex = if_else(Sex %in% c("Male"), "male",
+                       if_else(Sex %in% c("Female"), "female",
+                               "unknown"))) %>%
+          mutate(Location = if_else(Location == "Cocheco River", "Cocheco",
+                            if_else(Location == "Exeter River", "Exeter",
+                            if_else(Location == "Lamprey River", "Lamprey",
+                            if_else(Location == "Oyster River", "Oyster",
+                            if_else(Location == "Winnicut River", "Winnicut",
+                                    Location)
+                            )))))
 
 # updated blueback data for New Hamphshire
 
@@ -182,7 +198,18 @@ BBH_NH <- read.csv("data/BBH_biodata_for_Z_01-12-24.csv",
           select(State, Location = River, Species, AgeScale = Scale.Age,
                  AgeOtolith = Oto.Age, ForkLength = Fork.Length,
                  TotalLength = Total.Length, Weight, Sex, RepeatSpawn = RPS,
-                 Region, Year)
+                 Region, Year) %>%
+          mutate(Sex = if_else(Sex %in% c("Male"), "male",
+                       if_else(Sex %in% c("Female"), "female",
+                               "unknown"))) %>%
+          mutate(Location = if_else(Location == "Cocheco River", "Cocheco",
+                            if_else(Location == "Exeter River", "Exeter",
+                            if_else(Location == "Lamprey River", "Lamprey",
+                            if_else(Location == "Oyster River", "Oyster",
+                            if_else(Location == "Winnicut River", "Winnicut",
+                                    Location)
+                            )))))
+
 
 #-------------------------------------------------------------------------------
 # Want to create data set that combines data from all states into one file.
@@ -761,6 +788,9 @@ new_ME_BBH <-
   mutate(Species = "Blueback") %>%
   mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
                            format="%Y-%m-%d")) %>%
+  mutate(Sex = if_else(Sex == "Male", "male",
+                       if_else(Sex == "Female", "female",
+                               "unknown"))) %>%
   select(State,
          Date,
          Location = River,
@@ -780,6 +810,9 @@ new_ME_ALE <-
   mutate(Species = "Alewife") %>%
   mutate(Date = as.POSIXct(paste(Year, "01", "01", sep = "-"),
                            format="%Y-%m-%d")) %>%
+  mutate(Sex = if_else(Sex == "Male", "male",
+                       if_else(Sex == "Female", "female",
+                               "unknown"))) %>%
   select(State,
          Date,
          Location = River,
@@ -1118,8 +1151,8 @@ NC_WRC <-
   mutate(State = "NC_WRC") %>%
   mutate(Sex = case_when(Sex == "Male"~ "male",
                          Sex == "Female" ~ "female",
-                         Sex == "Juvenile" ~ "juvenile",
-                         (is.na(Sex) | Sex == "Unknown") ~ "unknown")) %>%
+                         # Sex == "Juvenile" ~ "juvenile",
+                         (is.na(Sex) | Sex == "Unknown" | Sex == "Juvenile") ~ "unknown")) %>%
   mutate(Species = case_when(Species == "BBH" ~ "Blueback",
                          Species == "ALE" ~ "Alewife")) %>%
   select(State,
@@ -1391,6 +1424,7 @@ RI_A <-
   mutate(AgeOtolith = NA_real_) %>%
   mutate(Sex = case_when(Sex == "M" ~ "male",
                          Sex == "F" ~ "female",
+                         is.na(Sex) ~ NA_character_,
                          TRUE ~ Sex)) %>%
   select(State,
          Date,
@@ -1436,6 +1470,7 @@ RI_B <-
   mutate(AgeOtolith = NA_real_) %>%
   mutate(Sex = case_when(Sex == "M" ~ "male",
                          Sex == "F" ~ "female",
+                         is.na(Sex) ~ NA_character_,
                          TRUE ~ Sex)) %>%
   select(State,
          Date,
@@ -1482,6 +1517,7 @@ RI_C <-
   mutate(AgeOtolith = NA_real_) %>%
   mutate(Sex = case_when(Sex == "M" ~ "male",
                          Sex == "F" ~ "female",
+                         is.na(Sex) ~ "unknown",
                          TRUE ~ Sex)) %>%
   mutate(RepeatSpawn = Age-FWZ) %>%
   mutate(FL = NA_real_) %>%

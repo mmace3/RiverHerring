@@ -28,7 +28,8 @@ library(readxl)
 # region estimates sexes combined
 
 region_data_raw <- read.csv("Zestimates_by_Region.csv",
-                 header = TRUE)
+                           header = TRUE) %>%
+                   filter(Region != "Mixed Stock")
 
 region_data <-
   region_data_raw %>%
@@ -50,7 +51,8 @@ region_data <-
 
 region_data_by_sex_raw <-
   read.csv("Zestimates_by_Region_by_sex.csv",
-           header = TRUE)
+           header = TRUE) %>%
+  filter(Region != "Mixed Stock")
 
 region_data_by_sex <-
   region_data_by_sex_raw %>%
@@ -74,7 +76,8 @@ region_data_by_sex <-
 river_data_raw <-
   read.csv("Zestimates_by_River.csv",
            header = TRUE,
-           stringsAsFactors = FALSE) # %>%
+           stringsAsFactors = FALSE) %>%
+  filter(Region != "Mixed Stock")
 
 river_data <-
   river_data_raw %>%
@@ -96,7 +99,8 @@ river_data <-
 river_data_by_sex_raw <-
   read.csv("Zestimates_by_River_by_sex.csv",
            header = TRUE,
-           stringsAsFactors = FALSE)
+           stringsAsFactors = FALSE)  %>%
+  filter(Region != "Mixed Stock")
 
 river_data_by_sex <-
   river_data_by_sex_raw %>%
@@ -112,23 +116,31 @@ river_data_by_sex <-
   mutate(ID = cur_group_id()) %>%
   ungroup()
 
+# Z reference points from SPR analysis
 
-Z_spr_a <- read_excel("Preliminary_Z40_ref_pts_RH_SA_2023.xlsx",
-                    sheet = "Sheet1",
-                    skip = 1,
-                    range = cell_limits(c(2, 1), c(5, 5))) %>%
-           mutate(Species = "Alewife")
+# Z_spr_a <- read_excel("Preliminary_Z40_ref_pts_RH_SA_2023.xlsx",
+#                     sheet = "Sheet1",
+#                     skip = 1,
+#                     range = cell_limits(c(2, 1), c(5, 5))) %>%
+#            mutate(Species = "Alewife")
+#
+# Z_spr_b <- read_excel("Preliminary_Z40_ref_pts_RH_SA_2023.xlsx",
+#                       sheet = "Sheet1",
+#                       skip = 1,
+#                       range = cell_limits(c(8, 1), c(13, 5))) %>%
+#            mutate(Species = "Blueback")
+#
+# Z_spr <- bind_rows(Z_spr_a, Z_spr_b) %>%
+#          rename(Z40 = `N-Weighted Z40`) %>%
+#          mutate(Region = if_else(Region == "CAN_NNE", "CAN-NNE", Region))
 
-Z_spr_b <- read_excel("Preliminary_Z40_ref_pts_RH_SA_2023.xlsx",
-                      sheet = "Sheet1",
-                      skip = 1,
-                      range = cell_limits(c(8, 1), c(13, 5))) %>%
-           mutate(Species = "Blueback")
-
-Z_spr <- bind_rows(Z_spr_a, Z_spr_b) %>%
-         rename(Z40 = `N-Weighted Z40`) %>%
-         mutate(Region = if_else(Region == "CAN_NNE", "CAN-NNE", Region))
-
+# 6 Feb 2024 - New reference points from Wes
+Z_spr <- read.csv("Regional_Z40_ALE_BBH_V2.csv",
+                  header = TRUE) %>%
+         mutate(Species = if_else(Species == "ALE", "Alewife", "Blueback")) %>%
+         rename(Z40 = Z.med,
+                Z40L = Z_LCI,
+                Z40U = Z_UCI)
 
 #-------------------------------------------------------------------------------
 
@@ -147,14 +159,21 @@ for(i in unique(region_data_by_sex$ID))
   sub_region <- unique(sub_data$Region)
   sub_agemethod <- unique(sub_data$AgeMethod)
 
-  title_temp <- paste(sub_region, sub_species, sub_agemethod, sep = " ")
 
+  title_temp <- paste(sub_region, sub_species, sub_agemethod, sep = " ")
+  print(title_temp)
   my_labels <- ifelse(my_breaks %% 5 == 0, my_breaks, "")
 
   Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+  Z40L_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40L
+  Z40U_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40U
+
+  x_min <- min(sub_data$Year)
+  x_max <- max(sub_data$Year)
 
 zplot <-
 ggplot(sub_data, aes(x = Year, y = Z, group = Sex)) +
+  geom_ribbon(aes(ymin = Z40L_spr_temp, ymax = Z40U_spr_temp), fill = "grey", alpha = 0.15) +
   geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1,
                 position=position_dodge(0.3)) +
   geom_point(aes(shape = Sex, fill = Sex), position=position_dodge(0.3), size = 3) +
@@ -166,7 +185,9 @@ ggplot(sub_data, aes(x = Year, y = Z, group = Sex)) +
     labs(y = "Z (Instantaneous mortality rate)",
          x = "",
          title = title_temp) +
-  geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+  # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+  geom_segment(aes(x = x_min, y = Z_spr_temp, xend = x_max, yend = Z_spr_temp), linetype = "dashed") +
+
   theme_bw()
 
 print(zplot)
@@ -200,9 +221,15 @@ for(i in unique(region_data$ID))
   my_labels <- ifelse(my_breaks %% 5 == 0, my_breaks, "")
 
   Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+  Z40L_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40L
+  Z40U_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40U
+
+  x_min <- min(sub_data$Year)
+  x_max <- max(sub_data$Year)
 
   zplot <-
     ggplot(sub_data, aes(x = Year, y = Z)) +
+    geom_ribbon(aes(ymin = Z40L_spr_temp, ymax = Z40U_spr_temp), fill = "grey", alpha = 0.15) +
     geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
     geom_point(size = 3) +
     coord_cartesian(ylim = c(0, 3)) +
@@ -211,7 +238,9 @@ for(i in unique(region_data$ID))
     labs(y = "Z (Instantaneous mortality rate)",
          x = "",
          title = title_temp) +
-    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    geom_segment(aes(x = x_min, y = Z_spr_temp, xend = x_max, yend = Z_spr_temp), linetype = "dashed") +
     theme_bw()
 
   print(zplot)
@@ -248,9 +277,16 @@ for(i in unique(river_data$ID))
   my_labels <- ifelse(my_breaks %% 10 == 0, my_breaks, "")
 
   Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+  Z40L_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40L
+  Z40U_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40U
+
+  x_min <- min(sub_data$Year)
+  x_max <- max(sub_data$Year)
+
 
   zplot <-
     ggplot(sub_data, aes(x = Year, y = Z)) +
+    geom_ribbon(aes(ymin = Z40L_spr_temp, ymax = Z40U_spr_temp), fill = "grey", alpha = 0.15) +
     geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1) +
     geom_point(size = 1) +
     coord_cartesian(ylim = c(0, 3)) +
@@ -259,7 +295,8 @@ for(i in unique(river_data$ID))
     labs(y = "Z (Instantaneous mortality rate)",
          x = "",
          title = title_temp) +
-    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    # geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    geom_segment(aes(x = x_min, y = Z_spr_temp, xend = x_max, yend = Z_spr_temp), linetype = "dashed") +
     facet_wrap(~Location
     ) +
     theme_bw()
@@ -293,9 +330,16 @@ for(i in unique(river_data_by_sex$ID))
   my_labels <- ifelse(my_breaks %% 10 == 0, my_breaks, "")
 
   Z_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40
+  Z40L_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40L
+  Z40U_spr_temp <- subset(Z_spr, Species == sub_species & Region == sub_region)$Z40U
+
+  x_min <- min(sub_data$Year)
+  x_max <- max(sub_data$Year)
+
 
   zplot <-
     ggplot(sub_data, aes(x = Year, y = Z, fill = Sex, group = Sex)) +
+    geom_ribbon(aes(ymin = Z40L_spr_temp, ymax = Z40U_spr_temp), fill = "grey", alpha = 0.15) +
     geom_errorbar(aes(ymin=Z-2*Zse, ymax=Z+2*Zse), width=1,
                   position=position_dodge(0.3)) +
     geom_point(aes(shape = Sex, fill = Sex, color = Sex), position=position_dodge(0.3), size = 3) +
@@ -307,7 +351,8 @@ for(i in unique(river_data_by_sex$ID))
     labs(y = "Z (Instantaneous mortality rate)",
          x = "",
          title = title_temp) +
-    geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    #geom_hline(yintercept = Z_spr_temp, linetype = "dashed", color = "black") +
+    geom_segment(aes(x = x_min, y = Z_spr_temp, xend = x_max, yend = Z_spr_temp), linetype = "dashed") +
     facet_wrap(~Location
     ) +
     theme_bw()

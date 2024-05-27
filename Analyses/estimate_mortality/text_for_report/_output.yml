@@ -24,7 +24,7 @@ bookdown::word_document2:
     
 officedown::rdocx_document:
     pandoc_args:
-      - '--filter=pandoc-crossref'
+      - '--filter=C:\Users\mmace\AppData\Local\RStudio\pandoc-crossref'
     reference_docx: 'manuscript_template.docx'
     fig_caption: true
     page_margins:

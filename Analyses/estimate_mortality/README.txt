@@ -60,3 +60,9 @@ NOTES:
                   including modified data from NY and data from Maine
                   that has rivers separated instead of all grouped
                   together.
+
+30 Jan 2024 - Uploaded new versions of all six files after
+              exluding all records where sex was "unknown" and
+              excluding data from SERC. Also, new records were added
+              in from New Hampshire where quite a few records with
+              only length data were converted to age.

@@ -44,6 +44,11 @@
 #      first age is zero because this won't affect the slope estimate from these
 #      models. The intercept will change though.
 
+# 29 January 2024
+#   The SAS decided to exclude records where sex was unknown and data from SERC.
+#   Also, added in new records from New Hampshire where age was estimated from
+#   length. See notes in clean_data/clean_data.R
+
 #-------------------------------------------------------------------------------
 # Load Packages, set options
 #-------------------------------------------------------------------------------
@@ -56,9 +61,9 @@ library(glmmTMB) # Poisson GLMM
 #-------------------------------------------------------------------------------
 
 data <- read.csv("clean_data.csv",
-                 header = TRUE) %>%
-        mutate(Date = as.POSIXct(Date, format="%Y-%m-%d")) %>%
-        mutate(Year = as.integer(format(Date, format= "%Y")))
+                 header = TRUE) # %>%
+        # mutate(Date = as.POSIXct(Date, format="%Y-%m-%d")) %>%
+        # mutate(Year = as.integer(format(Date, format= "%Y")))
 
 # number of records with an age estimate (should be 243041) (06 Oct 2023 - maybe
 # not anymore)
@@ -102,6 +107,8 @@ if(sep_by_sex == 1)
 # some fish get counted twice if they have both age and otolith estimate
 age_grouped <-
   data %>%
+  filter(State == "NH" | (Sex != "unknown")) %>% # exclude all unknowns except in NH
+  filter(State != "SERC") %>% # added 30 Jan 2024
   pivot_longer(cols = c(AgeScale, AgeOtolith),
                names_to = "AgeMethod",
                values_to = "Age",
@@ -111,6 +118,7 @@ age_grouped <-
   summarize(n_individuals = n()) %>%
   mutate(ID = cur_group_id()) %>%
   ungroup()
+
 
 #-------------------------------------------------------------------------------
 # Estimate mortality using the poisson glm method and with criteria given above
@@ -192,6 +200,8 @@ if(sep_by_sex == 1)
 
 age_grouped_region <-
   data %>%
+  filter(Sex != "unknown") %>% # added 30 Jan 2024
+  filter(State != "SERC") %>% # added 30 Jan 2024
   pivot_longer(cols = c(AgeScale, AgeOtolith),
                names_to = "AgeMethod",
                values_to = "Age",

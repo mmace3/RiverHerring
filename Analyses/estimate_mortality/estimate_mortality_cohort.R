@@ -15,6 +15,11 @@
 # The input data file clean_data.csv is created in the file
 # Analyses/clean_data/clean_data.R
 
+# 29 January 2024
+#   The SAS decided to exclude records where sex was unknown and data from SERC.
+#   Also, added in new records from New Hampshire where age was estimated from
+#   length. See notes in clean_data/clean_data.R
+
 #-------------------------------------------------------------------------------
 # Load Packages, set options
 #-------------------------------------------------------------------------------
@@ -28,8 +33,10 @@ library(tidyverse)
 
 dat <- read.csv("clean_data.csv",
                  header = TRUE) %>%
-  mutate(Date = as.POSIXct(Date, format="%Y-%m-%d")) %>%
-  mutate(Year = as.integer(format(Date, format= "%Y")))
+               filter(Sex != "unknown") %>% # added 30 Jan 2024
+               filter(State != "SERC") # added 30 Jan 2024
+  #mutate(Date = as.POSIXct(Date, format="%Y-%m-%d")) %>%
+  #mutate(Year = as.integer(format(Date, format= "%Y")))
 
 # number of records with an age estimate (should be 243041) (06 Oct 2023 - probably
 # not anymore)

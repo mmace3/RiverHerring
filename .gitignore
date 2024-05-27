@@ -50,4 +50,13 @@ Analyses/estimate_mortality/text_for_report/_main.docx
 Analyses/estimate_mortality/text_for_report/preamble.tex
 Analyses/estimate_mortality/text_for_report/README.md
 Analyses/estimate_mortality/text_for_report/style.css
+
+Analyses/estimate_mortality/examine_NHdata.R
+Analyses/estimate_mortality/old_estimates/
+Analyses/estimate_mortality/river_mortality_plots_NH_nounknowns.pdf
+Analyses/estimate_mortality/river_mortality_plots_NH_unknowns.pdf
+Analyses/estimate_mortality/text_for_report/RH_sSPR_Tables_12_06_23.xlsx
+Analyses/estimate_mortality/text_for_report/RiverHerringZ_files/
+Analyses/estimate_mortality/text_for_report/_main_cache/
+Analyses/estimate_mortality/text_for_report/_region_plots.Rmd
 	

@@ -93,7 +93,14 @@ data %>%
 
 # flag to separate data (estimates) by sex or not - 1 (yes) or not 1 (no)
 
-sep_by_sex <- 1
+# READ ME!!!!!
+# 03 June 2024 - I found a mistake in the way data was prepared for the poisson
+#               glms and I have a fix in place now, but it is not tested on
+#               the option to have sex specific mortality estimates. So for now
+#               DO NOT use sep_by_sex <- 1 here. Stick with sep_by_sex <- 0 for
+#               now.
+
+sep_by_sex <- 0
 
 if(sep_by_sex == 1)
 {
@@ -154,9 +161,26 @@ age_grouped_river_data <-
   group_by(across(all_of(river_grouping_variables_a))) %>%
   mutate(n_ages = n()) %>%
   mutate(total_fish = sum(n_individuals)) %>%
+  mutate(max_age = max(Age))%>%
   ungroup() %>%
   filter(n_ages > 2) %>%
-  filter(total_fish > 29)
+  filter(total_fish > 29) %>%
+  group_by(across(all_of(river_grouping_variables_a))) %>%
+  #do(add_row(., Serial_number = unique(.$Serial_number), Amplification = NA, Voltage = NA))
+  do(add_row(.,
+             Region = rep(unique(.$Region), times = unique(.$max_age)),
+             State = rep(unique(.$State), times = unique(.$max_age)),
+             Year = rep(unique(.$Year), times = unique(.$max_age)),
+             Location = rep(unique(.$Location), times = unique(.$max_age)),
+             Species = rep(unique(.$Species), times = unique(.$max_age)),
+             AgeMethod = rep(unique(.$AgeMethod), times = unique(.$max_age)),
+             Age = seq(from = (unique(.$max_age)+1), to = (2*unique(.$max_age)), by = 1),
+             n_individuals = rep(0, times = unique(.$max_age)),
+             ID = rep(unique(.$ID), times = unique(.$max_age)),
+             n_ages = rep(unique(.$n_ages), times = unique(.$max_age)),
+             total_fish = rep(unique(.$total_fish), times = unique(.$max_age)),
+             max_age = rep(unique(.$max_age), times = unique(.$max_age)))) %>%
+  ungroup()
 
 # Clean up format of estimates from above to format for output
 estimates_by_river <-
@@ -177,7 +201,7 @@ if(sep_by_sex == 1)
   file_name_river <- "Zestimates_by_River_by_sex.csv"
 } else
 {
-  file_name_river <- "Zestimates_by_River.csv"
+  file_name_river <- "Zestimates_by_River_NEW.csv"
 }
 
 write.csv(estimates_by_river,
@@ -227,9 +251,24 @@ age_grouped_region_data <-
   group_by(across(all_of(region_grouping_variables_b))) %>%
   mutate(n_ages = n()) %>%
   mutate(total_fish = sum(n_individuals)) %>%
+  mutate(max_age = max(Age))%>%
   ungroup() %>%
   filter(n_ages > 2) %>%
-  filter(total_fish > 29)
+  filter(total_fish > 29) %>%
+  group_by(across(all_of(region_grouping_variables_b))) %>%
+  #do(add_row(., Serial_number = unique(.$Serial_number), Amplification = NA, Voltage = NA))
+  do(add_row(.,
+             Region = rep(unique(.$Region), times = unique(.$max_age)),
+             Year = rep(unique(.$Year), times = unique(.$max_age)),
+             Species = rep(unique(.$Species), times = unique(.$max_age)),
+             AgeMethod = rep(unique(.$AgeMethod), times = unique(.$max_age)),
+             Age = seq(from = (unique(.$max_age)+1), to = (2*unique(.$max_age)), by = 1),
+             n_individuals = rep(0, times = unique(.$max_age)),
+             ID = rep(unique(.$ID), times = unique(.$max_age)),
+             n_ages = rep(unique(.$n_ages), times = unique(.$max_age)),
+             total_fish = rep(unique(.$total_fish), times = unique(.$max_age)),
+             max_age = rep(unique(.$max_age), times = unique(.$max_age)))) %>%
+  ungroup()
 
 estimates_by_region <-
   age_grouped_region_data %>%
@@ -248,7 +287,7 @@ if(sep_by_sex == 1)
   file_name_region <- "Zestimates_by_Region_by_sex.csv"
 } else
 {
-  file_name_region <- "Zestimates_by_Region.csv"
+  file_name_region <- "Zestimates_by_Region_NEW.csv"
 }
 
 write.csv(estimates_by_region,

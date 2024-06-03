@@ -66,3 +66,7 @@ NOTES:
               excluding data from SERC. Also, new records were added
               in from New Hampshire where quite a few records with
               only length data were converted to age.
+
+03 June 2024 - Found mistake in code to estimate mortality. Files
+               with _NEW appended to their name are the updated estimates.
+               So far I have only updated the sexes combined estimates.
